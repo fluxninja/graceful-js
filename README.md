@@ -1,1 +1,1 @@
-# Fluxninja ui package
+# Graceful-js (FluxNinja UI package)
