@@ -4,8 +4,8 @@
   "description": "Frontend library for Graceful degradation",
   "main": "dist/index.js",
   "scripts": {
-    "build": "rm -rf dist && tsc",
-    "format": "prettier --write .",
+    "build": "npm run format && rm -rf dist && tsc",
+    "format": "prettier --write ./src/**/*.{ts,tsx}",
     "lint": "eslint .",
     "test": "jest --config jestconfig.json",
     "link-local": "npm link && cd node_modules/react && npm link && cd ../react-dom && npm link",

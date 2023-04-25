@@ -1,35 +1,76 @@
-import { GracefulContextProps, GracefulProviderProps } from '../provider'
+import { GracefulContextProps } from '../provider'
 import { Dispatch, SetStateAction, useEffect } from 'react'
+
+import { FetchSenariosFnc } from '../types'
 import {
-  createGracefulPropsWithFetch,
+  fetchDecider,
   createGracefulPropsWithXMLHttpRequest,
-} from './utils'
+} from '../scenarios'
 
 const { fetch: windowFetch } = window
-const originalXMLRequest = XMLHttpRequest.prototype.send
+const originalXMLRequest = window.XMLHttpRequest.prototype.open
 
 export const useInterceptors = (
   setContext: Dispatch<SetStateAction<GracefulContextProps>>,
-  isCustomInterceptor?: boolean
+  urlList: string[] = [],
+  isCustomInterceptor: boolean
 ) => {
+  const baseSenariosBinded = baseSenarios.bind(null, setContext, urlList)
   useEffect(() => {
     if (isCustomInterceptor) {
       return
     }
-    // window fetch interceptor
-    window.fetch = async (...args) => {
-      const res = await windowFetch(...args)
-      setContext(await createGracefulPropsWithFetch(res.clone()))
-      return res
-    }
 
-    // XMLHttpRequest interceptor
-    XMLHttpRequest.prototype.send = function () {
+    fetchInterceptor(baseSenariosBinded)
+    window.XMLHttpRequest.prototype.open = function (method) {
       this.addEventListener('load', function () {
-        setContext(createGracefulPropsWithXMLHttpRequest(this))
+        if (urlList.length && !urlList.includes(this.responseURL)) return
+        const props = createGracefulPropsWithXMLHttpRequest(this)
+        setContext({
+          ...props,
+          method,
+        })
       })
       // @ts-expect-error
-      originalXMLRequest.apply(this, arguments)
+      return originalXMLRequest.apply(this, arguments)
     }
   }, [])
+}
+
+export declare type BaseSenarios = (
+  setContext: Dispatch<SetStateAction<GracefulContextProps>>,
+  urlList: string[],
+  url: RequestInfo | URL,
+  options: RequestInit | undefined,
+  res: Response
+) => Promise<Response>
+
+export const baseSenarios: BaseSenarios = async (
+  setContext,
+  urlList,
+  url,
+  options,
+  res
+) => {
+  if (urlList.length && !urlList.includes(res.url)) return res
+  const { res: decidedRes, gracefulProps } = await fetchDecider(
+    url,
+    options,
+    res
+  )
+
+  setContext({
+    ...gracefulProps,
+    method: options?.method || '',
+  })
+  return decidedRes
+}
+
+export const fetchInterceptor = (senarios: FetchSenariosFnc) => {
+  window.fetch = async function (...args) {
+    console.log('inside fetch interceptor')
+    const [url, options] = args
+    const res = await windowFetch(...args)
+    return senarios(url, options, res)
+  }
 }

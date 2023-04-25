@@ -9,11 +9,12 @@ export const createGracefulPropsWithFetch = async (clonedRes: Response) => {
       [key]: value,
     }
   })
-  const props: GracefulContextProps = {
+  const props: Omit<GracefulContextProps, 'method'> = {
     ...pick(clonedRes, 'url', 'status'),
     isError: !clonedRes.ok,
     headers: recordHeaders,
     responseBody: await clonedRes.json(),
+    typeOfRequest: 'FETCH',
   }
 
   return props
@@ -21,7 +22,6 @@ export const createGracefulPropsWithFetch = async (clonedRes: Response) => {
 
 export const createGracefulPropsWithXMLHttpRequest = (res: XMLHttpRequest) => {
   const responseHeaders = res.getAllResponseHeaders()
-
   // Parse the response headers into an object
   let headersObj = {}
   responseHeaders.split('\r\n').forEach((header) => {
@@ -34,15 +34,14 @@ export const createGracefulPropsWithXMLHttpRequest = (res: XMLHttpRequest) => {
     }
   })
 
-  const props: GracefulContextProps = {
+  const props: Omit<GracefulContextProps, 'method'> = {
     headers: headersObj,
     status: res.status,
     url: res.responseURL,
     isError: res.status < 200 || res.status >= 400,
     responseBody: JSON.parse(res.responseText) || null,
+    typeOfRequest: 'XML',
   }
-
-  console.log('response for XML', res)
 
   return props
 }

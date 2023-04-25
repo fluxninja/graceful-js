@@ -4,32 +4,23 @@ import React, {
   FC,
   PropsWithChildren,
   SetStateAction,
-  createContext,
   useState,
 } from 'react'
-
-export declare type GracefulContextProps = {
-  headers: Record<string, string>
-  url: string
-  isError: boolean
-  status: number
-  responseBody: any | null
-}
+import { GracefulContext, GracefulContextProps } from './graceful-context'
+import { RateLimit } from '../error-components'
 
 export declare type UseInterceptorsHook = (
   setContext: Dispatch<SetStateAction<GracefulContextProps>>
 ) => void
 
-export const GracefulContext = createContext<GracefulContextProps>(
-  {} as GracefulContextProps
-)
-
 export interface GracefulProviderProps {
+  urlList?: string[]
   applyCustomInterceptors?: boolean
   useInterceptorHook?: UseInterceptorsHook
 }
 
 export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
+  urlList,
   children,
   applyCustomInterceptors = false,
   useInterceptorHook = () => {},
@@ -38,10 +29,9 @@ export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
     {} as GracefulContextProps
   )
 
-  useInterceptors(setContext, applyCustomInterceptors)
+  useInterceptors(setContext, urlList, applyCustomInterceptors)
   useInterceptorHook(setContext)
-
-  console.log('stored most recent context', context)
+  console.log('context--', context)
 
   return (
     <GracefulContext.Provider value={context}>
