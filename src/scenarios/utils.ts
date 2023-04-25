@@ -39,7 +39,13 @@ export const createGracefulPropsWithXMLHttpRequest = (res: XMLHttpRequest) => {
     status: res.status,
     url: res.responseURL,
     isError: res.status < 200 || res.status >= 400,
-    responseBody: JSON.parse(res.responseText) || null,
+    responseBody: (() => {
+      try {
+        return JSON.parse(res.responseText)
+      } catch (e) {
+        return null
+      }
+    })(),
     typeOfRequest: 'XML',
   }
 
