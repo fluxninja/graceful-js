@@ -16,7 +16,7 @@ export const fetchDecider = async (
     case 429:
       return {
         gracefulProps,
-        res: await handle429Gracefully(
+        res: await handleRateLimitGracefully(
           url,
           options,
           res,
@@ -32,7 +32,7 @@ export const fetchDecider = async (
   }
 }
 
-export const handle429Gracefully = async (
+export const handleRateLimitGracefully = async (
   url: RequestInfo | URL,
   options: RequestInit | undefined,
   res: Response,

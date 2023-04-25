@@ -68,7 +68,6 @@ export const baseSenarios: BaseSenarios = async (
 
 export const fetchInterceptor = (senarios: FetchSenariosFnc) => {
   window.fetch = async function (...args) {
-    console.log('inside fetch interceptor')
     const [url, options] = args
     const res = await windowFetch(...args)
     return senarios(url, options, res)

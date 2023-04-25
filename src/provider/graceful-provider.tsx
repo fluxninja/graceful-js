@@ -10,7 +10,7 @@ import { GracefulContext, GracefulContextProps } from './graceful-context'
 import { RateLimit } from '../error-components'
 
 export declare type UseInterceptorsHook = (
-  setContext: Dispatch<SetStateAction<GracefulContextProps>>
+  setGracefulContext: Dispatch<SetStateAction<GracefulContextProps>>
 ) => void
 
 export interface GracefulProviderProps {
@@ -31,7 +31,6 @@ export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
 
   useInterceptors(setContext, urlList, applyCustomInterceptors)
   useInterceptorHook(setContext)
-  console.log('context--', context)
 
   return (
     <GracefulContext.Provider value={context}>
