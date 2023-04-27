@@ -23,6 +23,10 @@ export declare type RateLimitHeaders = {
    * "user" or "bot"
    */
   'X-RateLimit-Scope': string
+  /**
+   * The number of seconds after which the rate limit resets
+   */
+  'Retry-After': string
 }
 
 export declare type RateLimitResponseBody = {

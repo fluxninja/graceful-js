@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, createContext } from 'react'
+import { createContext } from 'react'
 
 export declare type GracefulContextProps = {
   headers: Record<string, string>
@@ -6,7 +6,7 @@ export declare type GracefulContextProps = {
   isError: boolean
   status: number
   responseBody: any | null
-  typeOfRequest: 'FETCH' | 'XML'
+  typeOfRequest: 'FETCH' | 'AXIOS' | 'XML'
   method: string
 }
 

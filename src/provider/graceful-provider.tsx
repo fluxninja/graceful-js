@@ -7,30 +7,30 @@ import React, {
   useState,
 } from 'react'
 import { GracefulContext, GracefulContextProps } from './graceful-context'
-import { RateLimit } from '../error-components'
+import { AxiosInstance } from 'axios'
 
 export declare type UseInterceptorsHook = (
   setGracefulContext: Dispatch<SetStateAction<GracefulContextProps>>
 ) => void
 
-export interface GracefulProviderProps {
+export declare type Config = {
+  axios?: AxiosInstance
   urlList?: string[]
-  applyCustomInterceptors?: boolean
-  useInterceptorHook?: UseInterceptorsHook
+}
+
+export interface GracefulProviderProps {
+  config?: Config
 }
 
 export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
-  urlList,
+  config,
   children,
-  applyCustomInterceptors = false,
-  useInterceptorHook = () => {},
 }) => {
   const [context, setContext] = useState<GracefulContextProps>(
     {} as GracefulContextProps
   )
 
-  useInterceptors(setContext, urlList, applyCustomInterceptors)
-  useInterceptorHook(setContext)
+  useInterceptors(setContext, config)
 
   return (
     <GracefulContext.Provider value={context}>

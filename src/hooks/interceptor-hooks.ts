@@ -1,39 +1,26 @@
-import { GracefulContextProps } from '../provider'
+import { Config, GracefulContextProps } from '../provider'
 import { Dispatch, SetStateAction, useEffect } from 'react'
 
 import { FetchSenariosFnc } from '../types'
 import {
+  axiosDecider,
+  createGracefulPropsWithAxios,
   fetchDecider,
-  createGracefulPropsWithXMLHttpRequest,
 } from '../scenarios'
+import { AxiosInstance } from 'axios'
 
 const { fetch: windowFetch } = window
-const originalXMLRequest = window.XMLHttpRequest.prototype.open
 
 export const useInterceptors = (
   setContext: Dispatch<SetStateAction<GracefulContextProps>>,
-  urlList: string[] = [],
-  isCustomInterceptor: boolean
+  config?: Config
 ) => {
+  const { urlList = [], axios = null } = config || {}
   const baseSenariosBinded = baseSenarios.bind(null, setContext, urlList)
-  useEffect(() => {
-    if (isCustomInterceptor) {
-      return
-    }
 
+  useEffect(() => {
     fetchInterceptor(baseSenariosBinded)
-    window.XMLHttpRequest.prototype.open = function (method) {
-      this.addEventListener('load', function () {
-        if (urlList.length && !urlList.includes(this.responseURL)) return
-        const props = createGracefulPropsWithXMLHttpRequest(this)
-        setContext({
-          ...props,
-          method,
-        })
-      })
-      // @ts-expect-error
-      return originalXMLRequest.apply(this, arguments)
-    }
+    axiosInterceptor(setContext, axios)
   }, [])
 }
 
@@ -72,4 +59,15 @@ export const fetchInterceptor = (senarios: FetchSenariosFnc) => {
     const res = await windowFetch(...args)
     return senarios(url, options, res)
   }
+}
+
+export const axiosInterceptor = (
+  setContext: Dispatch<SetStateAction<GracefulContextProps>>,
+  axios: AxiosInstance | null
+) => {
+  if (!axios) return
+  axios.interceptors.response.use(async (res) => {
+    setContext(createGracefulPropsWithAxios(res))
+    return res
+  }, axiosDecider(axios, setContext))
 }

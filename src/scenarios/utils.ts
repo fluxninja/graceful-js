@@ -1,5 +1,6 @@
 import { pick } from 'lodash'
 import { GracefulContextProps } from '../provider'
+import { AxiosResponse } from 'axios'
 
 export const createGracefulPropsWithFetch = async (clonedRes: Response) => {
   let recordHeaders = {}
@@ -47,6 +48,20 @@ export const createGracefulPropsWithXMLHttpRequest = (res: XMLHttpRequest) => {
       }
     })(),
     typeOfRequest: 'XML',
+  }
+
+  return props
+}
+
+export const createGracefulPropsWithAxios = (res: AxiosResponse) => {
+  const props: GracefulContextProps = {
+    headers: res.headers as Record<string, string>,
+    status: res.status,
+    url: `${res.config.baseURL}${res.config.url}` || '',
+    isError: res.status < 200 || res.status >= 400,
+    responseBody: res.data,
+    typeOfRequest: 'AXIOS',
+    method: res.config.method || '',
   }
 
   return props

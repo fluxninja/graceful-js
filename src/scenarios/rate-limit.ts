@@ -1,38 +1,13 @@
-import { FetchSenariosFnc, RateLimitResponseBody } from '../types'
+import { AxiosInstance, AxiosRequestConfig } from 'axios'
+import { AxiosError } from 'axios'
 
 export const RATE_LIMITED_STATUS = 429
 
+export interface AxiosRequestConfigWithRetry extends AxiosRequestConfig {
+  __retryCount?: number
+}
+
 const originalFetch = window.fetch
-
-export const retryRequestByBodyWithFetch: FetchSenariosFnc = async (
-  url,
-  options,
-  res
-) => {
-  const { retryAfter, retryLimit } = ((await res
-    .clone()
-    .json()) as RateLimitResponseBody) || {
-    retryAfter: 0,
-    retryLimit: 0,
-  }
-  return refetchWithRateLimit(url, options, res, retryAfter, retryLimit)
-}
-
-export const retryRequestByHeaderWithFetch: FetchSenariosFnc = async (
-  url,
-  options,
-  res
-) => {
-  const retryAfterHeader = res.headers.get('X-RateLimit-Reset-After')
-  const retryLimitHeader = res.headers.get('X-RateLimit-Limit')
-  return refetchWithRateLimit(
-    url,
-    options,
-    res,
-    parseInt(retryAfterHeader || '0'),
-    parseInt(retryLimitHeader || '0')
-  )
-}
 
 export const refetchWithRateLimit = async (
   url: RequestInfo | URL,
@@ -53,5 +28,28 @@ export const refetchWithRateLimit = async (
     }
   }
 
-  throw new Error('Rate limit exceeded')
+  throw res
+}
+
+export const refetchWithRateLimitAxios = async (
+  axios: AxiosInstance,
+  error: AxiosError,
+  retryAfter: number,
+  retryLimit: number
+) => {
+  if (!error.config) {
+    throw error
+  }
+
+  const config: AxiosRequestConfigWithRetry = error.config
+
+  if ((config.__retryCount || 0) >= retryLimit) {
+    throw error
+  }
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      config.__retryCount = (config.__retryCount || 0) + 1
+      resolve(axios(config))
+    }, ~~retryAfter * 1000)
+  })
 }
