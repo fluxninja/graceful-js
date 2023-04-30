@@ -6,34 +6,7 @@ import { refetchWithRateLimit, refetchWithRateLimitAxios } from './rate-limit'
 import { AxiosError, AxiosInstance } from 'axios'
 import { Dispatch, SetStateAction } from 'react'
 import { GracefulContextProps } from '../provider'
-
-export const fetchDecider = async (
-  url: RequestInfo | URL,
-  options: RequestInit | undefined,
-  res: Response
-) => {
-  const gracefulProps = await createGracefulPropsWithFetch(res.clone())
-  const { status, headers, responseBody } = gracefulProps
-
-  switch (status) {
-    case 429:
-      return {
-        gracefulProps,
-        res: await handleRateLimitGracefullyFetch(
-          url,
-          options,
-          res,
-          headers,
-          responseBody
-        ),
-      }
-    default:
-      return {
-        gracefulProps,
-        res,
-      }
-  }
-}
+import { GracefulErrorStatus } from '../types'
 
 export const handleRateLimitGracefullyFetch = async (
   url: RequestInfo | URL,
@@ -65,21 +38,24 @@ export const handleRateLimitGracefullyFetch = async (
   return res
 }
 
-export const axiosDecider = (
-  axios: AxiosInstance,
-  setContext: Dispatch<SetStateAction<GracefulContextProps>>
+export const errorMapFetch: Map<
+  GracefulErrorStatus,
+  (...args: any[]) => Promise<Response>
+> = new Map([[429, handleRateLimitGracefullyFetch]])
+
+export const fetchDecider = async (
+  url: RequestInfo | URL,
+  options: RequestInit | undefined,
+  res: Response
 ) => {
-  return async (error: AxiosError) => {
-    const { response, status } = error
-    if (response) {
-      setContext(createGracefulPropsWithAxios(response))
-    }
-    switch (response?.status || status) {
-      case 429:
-        return handleRateLimitGracefullyAxios(error, axios)
-      default:
-        return await Promise.reject(error)
-    }
+  const gracefulProps = await createGracefulPropsWithFetch(res.clone())
+  const { status, headers, responseBody } = gracefulProps
+
+  const fetchErrors = errorMapFetch.get(status) ?? (() => res)
+
+  return {
+    gracefulProps,
+    res: await fetchErrors(url, options, res, headers, responseBody),
   }
 }
 
@@ -102,4 +78,27 @@ export const handleRateLimitGracefullyAxios = async (
   }
 
   return await Promise.reject(error)
+}
+
+export const defaultErrorHandler = (props: any) => Promise.reject(props)
+
+export const errorMapAxios: Map<
+  GracefulErrorStatus,
+  (...args: any[]) => Promise<unknown>
+> = new Map([[429, handleRateLimitGracefullyAxios]])
+
+export const axiosDecider = (
+  axios: AxiosInstance,
+  setContext: Dispatch<SetStateAction<GracefulContextProps>>
+) => {
+  return async (error: AxiosError) => {
+    const { response, status } = error
+    if (response) {
+      setContext(createGracefulPropsWithAxios(response))
+    }
+
+    const handle =
+      errorMapAxios.get(response?.status || status || 0) ?? defaultErrorHandler
+    return await handle(error, axios)
+  }
 }
