@@ -15,27 +15,20 @@ export const handleRateLimitGracefullyFetch = async (
   headers: Record<string, string>,
   responseBody: any
 ) => {
+  let retryAfter = 0
+  let retryLimit = 0
+
   if (responseBody?.retryAfter && responseBody?.retryLimit) {
-    return refetchWithRateLimit(
-      url,
-      options,
-      res,
-      responseBody.retryAfter,
-      responseBody.retryLimit
-    )
+    retryAfter = responseBody.retryAfter
+    retryLimit = responseBody.retryLimit
+  } else if (headers?.['Reset-After'] && headers?.['X-RateLimit-Limit']) {
+    retryAfter = parseInt(headers['Reset-After'])
+    retryLimit = parseInt(headers['X-RateLimit-Limit'])
+  } else {
+    return res
   }
 
-  if (headers && headers?.['Reset-After'] && headers?.['X-RateLimit-Limit']) {
-    return refetchWithRateLimit(
-      url,
-      options,
-      res,
-      parseInt(headers?.['Reset-After'] || '0'),
-      parseInt(headers?.['X-RateLimit-Limit'] || '0')
-    )
-  }
-
-  return res
+  return refetchWithRateLimit(url, options, res, retryAfter, retryLimit)
 }
 
 export const errorMapFetch: Map<
@@ -63,21 +56,23 @@ export const handleRateLimitGracefullyAxios = async (
   error: AxiosError<any, unknown>,
   axios: AxiosInstance
 ) => {
-  const { response } = error
+  const { response } = error || {}
   const { headers, data } = response || {}
 
+  let retryAfter = 0
+  let retryLimit = 0
+
   if (data?.retryAfter && data?.retryLimit) {
-    const { retryAfter, retryLimit } = data
-    return refetchWithRateLimitAxios(axios, error, retryAfter, retryLimit)
+    retryAfter = data.retryAfter
+    retryLimit = data.retryLimit
+  } else if (headers?.['Reset-After'] && headers?.['X-RateLimit-Limit']) {
+    retryAfter = parseInt(headers['Reset-After'])
+    retryLimit = parseInt(headers['X-RateLimit-Limit'])
+  } else {
+    return Promise.reject(error)
   }
 
-  if (headers && headers?.['Reset-After'] && headers?.['X-RateLimit-Limit']) {
-    const retryAfter = parseInt(headers?.['Reset-After'] || '0')
-    const retryLimit = parseInt(headers?.['X-RateLimit-Limit'] || '0')
-    return refetchWithRateLimitAxios(axios, error, retryAfter, retryLimit)
-  }
-
-  return await Promise.reject(error)
+  return refetchWithRateLimitAxios(axios, error, retryAfter, retryLimit)
 }
 
 export const defaultErrorHandler = (props: any) => Promise.reject(props)

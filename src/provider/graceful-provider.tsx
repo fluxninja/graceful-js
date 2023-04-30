@@ -23,8 +23,8 @@ export interface GracefulProviderProps {
 }
 
 export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
-  config,
   children,
+  config,
 }) => {
   const [context, setContext] = useState<GracefulContextProps>(
     {} as GracefulContextProps
