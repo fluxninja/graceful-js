@@ -6,7 +6,11 @@ import React, {
   SetStateAction,
   useState,
 } from 'react'
-import { GracefulContext, GracefulContextProps } from './graceful-context'
+import {
+  GracefulContext,
+  GracefulContextProps,
+  initialProps,
+} from './graceful-context'
 import { AxiosInstance } from 'axios'
 
 export declare type UseInterceptorsHook = (
@@ -26,9 +30,7 @@ export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
   children,
   config,
 }) => {
-  const [context, setContext] = useState<GracefulContextProps>(
-    {} as GracefulContextProps
-  )
+  const [context, setContext] = useState<GracefulContextProps>(initialProps)
 
   useInterceptors(setContext, config)
 
