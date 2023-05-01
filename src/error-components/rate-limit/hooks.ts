@@ -1,4 +1,4 @@
-import { useGracefulContext } from '../../hooks'
+import { useGraceful } from '../../hooks'
 
 export type RateLimitScenariosReturn = {
   isRateLimited: boolean
@@ -7,7 +7,9 @@ export type RateLimitScenariosReturn = {
 export const RATE_LIMITED_STATUS = 429
 
 export const useRateLimitScenarios = (): RateLimitScenariosReturn => {
-  const { isError, status } = useGracefulContext()
+  const {
+    ctx: { isError, status },
+  } = useGraceful()
 
   if (!isError || status !== RATE_LIMITED_STATUS)
     return { isRateLimited: false }

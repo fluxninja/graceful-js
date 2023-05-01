@@ -1,4 +1,4 @@
-import { Config, GracefulContextProps } from '../provider'
+import { Config, GracefulContext } from '../provider'
 import { Dispatch, SetStateAction, useEffect } from 'react'
 
 import { FetchSenariosFnc } from '../types'
@@ -15,7 +15,7 @@ import type { TypedDocumentNode } from '@graphql-typed-document-node/core'
 const { fetch: windowFetch } = window
 
 export const useInterceptors = (
-  setGracefulContext: Dispatch<SetStateAction<GracefulContextProps>>,
+  setGracefulContext: Dispatch<SetStateAction<GracefulContext>>,
   config?: Config
 ) => {
   const { urlList = [], axios = null } = config || {}
@@ -32,7 +32,7 @@ export const useInterceptors = (
 }
 
 export declare type BaseSenarios = (
-  setGracefulContext: Dispatch<SetStateAction<GracefulContextProps>>,
+  setGracefulContext: Dispatch<SetStateAction<GracefulContext>>,
   urlList: string[],
   url: RequestInfo | URL,
   options: RequestInit | undefined,
@@ -47,16 +47,8 @@ export const baseSenarios: BaseSenarios = async (
   res
 ) => {
   if (urlList.length && !urlList.includes(res.url)) return res
-  const { res: decidedRes, gracefulProps } = await fetchDecider(
-    url,
-    options,
-    res
-  )
+  const decidedRes = await fetchDecider(setGracefulContext, url, options, res)
 
-  setGracefulContext({
-    ...gracefulProps,
-    method: options?.method || '',
-  })
   return decidedRes
 }
 
@@ -69,12 +61,14 @@ export const fetchInterceptor = (senarios: FetchSenariosFnc) => {
 }
 
 export const axiosInterceptor = (
-  setGracefulContext: Dispatch<SetStateAction<GracefulContextProps>>,
+  setGracefulContext: Dispatch<SetStateAction<GracefulContext>>,
   axios: AxiosInstance | null
 ) => {
   if (!axios) return
   axios.interceptors.response.use(async (res) => {
-    setGracefulContext(createGracefulPropsWithAxios(res))
+    setGracefulContext({
+      ctx: createGracefulPropsWithAxios(res),
+    })
     return res
   }, axiosDecider(axios, setGracefulContext))
 }

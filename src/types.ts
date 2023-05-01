@@ -5,28 +5,28 @@ export declare type RateLimitHeaders = {
   /**
    * The number of requests that can be made
    */
-  'X-RateLimit-Limit': string
+  'x-ratelimit-limit': string
   /**
    * The number of remaining requests that can be made
    */
-  'X-RateLimit-Remaining': string
+  'x-ratelimit-remaining': string
   /**
    * The number of seconds until the rate limit resets
    */
-  'X-RateLimit-Reset-After': string
+  'x-ratelimit-reset-after': string
   /**
    * Returned only on HTTP 429 responses if the rate limit encountered is the global rate limit (not per-route)
    */
-  'X-RateLimit-Global': string
+  'x-ratelimit-global': string
   /**
    * The scope of the rate limit upto which it is valid. For example,
    * "user" or "bot"
    */
-  'X-RateLimit-Scope': string
+  'x-ratelimit-scope': string
   /**
    * The number of seconds after which the rate limit resets
    */
-  'Retry-After': string
+  'retry-after': string
 }
 
 export declare type RateLimitResponseBody = {

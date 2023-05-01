@@ -4,14 +4,20 @@ import React, {
   FC,
   PropsWithChildren,
   SetStateAction,
+  useMemo,
   useState,
 } from 'react'
 import {
   GracefulContext,
   GracefulContextProps,
+  GracefulProps,
+  GracefulStore,
+  GracefulTheme,
+  initialContextProps,
   initialProps,
 } from './graceful-context'
 import { AxiosInstance } from 'axios'
+import { ApplyGlobalRateLimitError } from '../error-components/rate-limit/components/global-rate-limit'
 
 export declare type UseInterceptorsHook = (
   setGracefulContext: Dispatch<SetStateAction<GracefulContextProps>>
@@ -20,6 +26,7 @@ export declare type UseInterceptorsHook = (
 export declare type Config = {
   axios?: AxiosInstance
   urlList?: string[]
+  theme?: GracefulTheme
 }
 
 export interface GracefulProviderProps {
@@ -30,13 +37,23 @@ export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
   children,
   config,
 }) => {
-  const [context, setContext] = useState<GracefulContextProps>(initialProps)
+  const [context, setContext] = useState<GracefulContext>(initialContextProps)
+  const [, setGraceful] = useState<GracefulProps>(initialProps)
 
   useInterceptors(setContext, config)
 
+  const value: GracefulProps = useMemo(
+    () => ({
+      ...context,
+      ...(config?.theme && { theme: config.theme }),
+      setGraceful,
+    }),
+    [context]
+  )
+
   return (
-    <GracefulContext.Provider value={context}>
-      {children}
-    </GracefulContext.Provider>
+    <GracefulStore.Provider value={value}>
+      <ApplyGlobalRateLimitError>{children}</ApplyGlobalRateLimitError>
+    </GracefulStore.Provider>
   )
 }

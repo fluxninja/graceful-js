@@ -1,4 +1,5 @@
-import { createContext } from 'react'
+import { noop } from 'lodash'
+import { Dispatch, SetStateAction, createContext } from 'react'
 
 export declare type GracefulContextProps = {
   headers: Record<string, string>
@@ -8,16 +9,40 @@ export declare type GracefulContextProps = {
   responseBody: any | null
   typeOfRequest: 'FETCH' | 'AXIOS' | 'XML'
   method: string
+  retriesLeft?: number
 }
 
-export const initialProps: GracefulContextProps = {
-  headers: {},
-  url: '',
-  isError: false,
-  status: 0,
-  responseBody: null,
-  typeOfRequest: 'FETCH',
-  method: '',
+export declare type GracefulTheme = {
+  primary: string
+  secondary: string
+  text: string
 }
 
-export const GracefulContext = createContext<GracefulContextProps>(initialProps)
+export declare type GracefulContext = {
+  ctx: GracefulContextProps
+}
+
+export declare type GracefulProps = GracefulContext & {
+  setGraceful: Dispatch<SetStateAction<GracefulProps>>
+  theme?: GracefulTheme
+}
+
+export const initialContextProps: GracefulContext = {
+  ctx: {
+    headers: {},
+    url: '',
+    isError: false,
+    status: 0,
+    responseBody: null,
+    typeOfRequest: 'FETCH',
+    method: '',
+    retriesLeft: 0,
+  },
+}
+
+export const initialProps: GracefulProps = {
+  ...initialContextProps,
+  setGraceful: noop,
+}
+
+export const GracefulStore = createContext<GracefulProps>(initialProps)
