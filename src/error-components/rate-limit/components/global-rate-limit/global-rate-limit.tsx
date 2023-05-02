@@ -7,14 +7,17 @@ import {
 } from '@mui/material'
 import React, { FC, PropsWithChildren, ReactNode, useMemo } from 'react'
 import { GlobalRateLimitStyled } from './styled'
-import { ErrorIcon } from './error-icon'
+import { ErrorIcon } from '../../../error-icon'
 import { useGraceful, useGracefulTheme } from '../../../../hooks'
 import { DefaultText } from '../../../types'
 import { CountDown } from '../count-down'
 
 export declare type GlobalRateLimitText = 'sorry' | 'message' | 'thankYou'
 
-export const defaultText: DefaultText<GlobalRateLimitText, ReactNode> = {
+export const defaultGlobalRateLimitText: DefaultText<
+  GlobalRateLimitText,
+  ReactNode
+> = {
   sorry: `We’re sorry`,
   message: (
     <>
@@ -35,7 +38,7 @@ export interface GlobalRateLimitProps {
 export const GlobalRateLimit: FC<PropsWithChildren<GlobalRateLimitProps>> = ({
   dialogProps,
   retryAfter,
-  text = defaultText,
+  text = defaultGlobalRateLimitText,
 }) => {
   const theme = useGracefulTheme()
   const {

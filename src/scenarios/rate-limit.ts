@@ -4,8 +4,6 @@ import { Dispatch, SetStateAction } from 'react'
 import { GracefulContext } from '../provider'
 import { createGracefulPropsWithFetch } from './utils'
 
-export const RATE_LIMITED_STATUS = 429
-
 export interface AxiosRequestConfigWithRetry extends AxiosRequestConfig {
   __retryCount?: number
 }
@@ -19,7 +17,7 @@ export const refetchWithRateLimit = async (
   res: Response,
   retryAfter: number,
   retryLimit: number,
-  STATUS_CODE: number = RATE_LIMITED_STATUS
+  STATUS_CODE: number
 ) => {
   if (retryLimit === 0) return res
   let count = 0
@@ -36,7 +34,11 @@ export const refetchWithRateLimit = async (
         retriesLeft: retryLimit - count,
       },
     }))
+
     if (count >= retryLimit || refetchRes.status !== STATUS_CODE) {
+      if (gracefulProps.isError) {
+        throw refetchRes
+      }
       return refetchRes
     }
   }

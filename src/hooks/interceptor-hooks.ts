@@ -1,7 +1,7 @@
 import { Config, GracefulContext } from '../provider'
 import { Dispatch, SetStateAction, useEffect } from 'react'
 
-import { FetchSenariosFnc } from '../types'
+import { FetchScenariosFnc } from '../types'
 import {
   axiosDecider,
   createGracefulPropsWithAxios,
@@ -52,7 +52,7 @@ export const baseSenarios: BaseSenarios = async (
   return decidedRes
 }
 
-export const fetchInterceptor = (senarios: FetchSenariosFnc) => {
+export const fetchInterceptor = (senarios: FetchScenariosFnc) => {
   window.fetch = async function (...args) {
     const [url, options] = args
     const res = await windowFetch(...args)

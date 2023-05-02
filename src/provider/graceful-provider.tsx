@@ -19,10 +19,6 @@ import {
 import { AxiosInstance } from 'axios'
 import { ApplyGlobalRateLimitError } from '../error-components/rate-limit/components/global-rate-limit'
 
-export declare type UseInterceptorsHook = (
-  setGracefulContext: Dispatch<SetStateAction<GracefulContextProps>>
-) => void
-
 export declare type Config = {
   axios?: AxiosInstance
   urlList?: string[]
@@ -50,6 +46,8 @@ export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
     }),
     [context]
   )
+
+  console.log('value: ', value)
 
   return (
     <GracefulStore.Provider value={value}>

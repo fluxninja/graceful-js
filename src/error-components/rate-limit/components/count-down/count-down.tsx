@@ -1,23 +1,30 @@
 import React, { FC, PropsWithChildren, useEffect, useState } from 'react'
-import { useGraceful, useGracefulTheme } from '../../../../hooks'
+import { useGracefulTheme } from '../../../../hooks'
 import { Box, Typography } from '@mui/material'
+import { DefaultText } from '../../../types'
 
 export interface CountDownProps {
   seconds: number
   retriesLeft?: number
+  text?: DefaultText<CountDownText>
+}
+
+type CountDownText = 'wait' | 'seconds' | 'down'
+
+export const defaultCountDownText: DefaultText<CountDownText> = {
+  wait: 'Your estimated wait is',
+  seconds: 'seconds...',
+  down: 'Currently, app is down. Please try again later.',
 }
 
 export const CountDown: FC<PropsWithChildren<CountDownProps>> = ({
   seconds,
   retriesLeft = 0,
+  text = defaultCountDownText,
 }) => {
   const theme = useGracefulTheme()
 
   const [timeLeft, setTimeLeft] = useState(seconds)
-
-  useEffect(() => {
-    setTimeLeft(seconds)
-  }, [seconds])
 
   useEffect(() => {
     if (!retriesLeft) return
@@ -45,7 +52,7 @@ export const CountDown: FC<PropsWithChildren<CountDownProps>> = ({
               fontWeight: '400',
             }}
           >
-            {`Your estimated wait is`}
+            {text.wait}
           </Typography>
           <Typography
             {...{
@@ -55,7 +62,7 @@ export const CountDown: FC<PropsWithChildren<CountDownProps>> = ({
               sx: { color: theme.primary },
             }}
           >
-            {`${timeLeft} seconds...`}
+            {`${timeLeft} ${text.seconds}`}
           </Typography>
         </>
       ) : (
@@ -66,7 +73,7 @@ export const CountDown: FC<PropsWithChildren<CountDownProps>> = ({
             sx: { color: theme.secondary },
           }}
         >
-          {`Currently, app is down. Please try again later.`}
+          {text.down}
         </Typography>
       )}
     </Box>

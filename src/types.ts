@@ -36,7 +36,7 @@ export declare type RateLimitResponseBody = {
   global: boolean
 }
 
-export declare type FetchSenariosFnc = (
+export declare type FetchScenariosFnc = (
   url: RequestInfo | URL,
   options: RequestInit | undefined,
   res: Response

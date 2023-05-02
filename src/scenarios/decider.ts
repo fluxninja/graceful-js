@@ -35,7 +35,8 @@ export const handleRateLimitGracefullyFetch = async (
     options,
     res,
     retryAfter,
-    retryLimit
+    retryLimit,
+    429
   )
 }
 
