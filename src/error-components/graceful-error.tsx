@@ -1,5 +1,6 @@
 import React, { FC } from 'react'
 import { errorComponentMap, useMostRecentError } from './decider'
+import { GracefulErrorStatus } from '../types'
 
 export const GracefulError: FC = () => {
   const {
@@ -10,5 +11,5 @@ export const GracefulError: FC = () => {
     return null
   }
 
-  return errorComponentMap.get(status) || null
+  return errorComponentMap.get(status as GracefulErrorStatus) || null
 }

@@ -1,15 +1,7 @@
 import { useInterceptors } from '../hooks'
-import React, {
-  Dispatch,
-  FC,
-  PropsWithChildren,
-  SetStateAction,
-  useMemo,
-  useState,
-} from 'react'
+import React, { FC, PropsWithChildren, useMemo, useState } from 'react'
 import {
   GracefulContext,
-  GracefulContextProps,
   GracefulProps,
   GracefulStore,
   GracefulTheme,
@@ -17,7 +9,6 @@ import {
   initialProps,
 } from './graceful-context'
 import { AxiosInstance } from 'axios'
-import { ApplyGlobalRateLimitError } from '../error-components/rate-limit/components/global-rate-limit'
 
 export declare type Config = {
   axios?: AxiosInstance
@@ -46,8 +37,6 @@ export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
     }),
     [context]
   )
-
-  console.log('value: ', value)
 
   return (
     <GracefulStore.Provider value={value}>{children}</GracefulStore.Provider>

@@ -2,7 +2,7 @@
  * This module is responsible for deciding which error component to render
  */
 
-import { FC, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { GracefulProps, initialProps } from '../provider'
 import { useGraceful } from '../hooks'
 import { GracefulErrorStatus } from '../types'
