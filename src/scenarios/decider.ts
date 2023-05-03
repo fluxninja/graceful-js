@@ -36,14 +36,18 @@ export const handleRateLimitGracefullyFetch = async (
     res,
     retryAfter,
     retryLimit,
-    429
+    res.status
   )
 }
 
 export const errorMapFetch: Map<
   GracefulErrorStatus,
   (...args: any[]) => Promise<Response>
-> = new Map([[429, handleRateLimitGracefullyFetch]])
+> = new Map([
+  [429, handleRateLimitGracefullyFetch],
+  [503, handleRateLimitGracefullyFetch],
+  [504, handleRateLimitGracefullyFetch],
+])
 
 export const fetchDecider = async (
   setContext: Dispatch<SetStateAction<GracefulContext>>,
@@ -101,7 +105,11 @@ export const defaultErrorHandler = (props: any) => Promise.reject(props)
 export const errorMapAxios: Map<
   GracefulErrorStatus,
   (...args: any[]) => Promise<unknown>
-> = new Map([[429, handleRateLimitGracefullyAxios]])
+> = new Map([
+  [429, handleRateLimitGracefullyAxios],
+  [503, handleRateLimitGracefullyAxios],
+  [504, handleRateLimitGracefullyAxios],
+])
 
 export const axiosDecider = (
   axios: AxiosInstance,

@@ -19,7 +19,6 @@ export const refetchWithRateLimit = async (
   retryLimit: number,
   STATUS_CODE: number
 ) => {
-  if (retryLimit === 0) return res
   let count = 0
   while (count < retryLimit) {
     count++

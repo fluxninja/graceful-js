@@ -50,8 +50,6 @@ export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
   console.log('value: ', value)
 
   return (
-    <GracefulStore.Provider value={value}>
-      <ApplyGlobalRateLimitError>{children}</ApplyGlobalRateLimitError>
-    </GracefulStore.Provider>
+    <GracefulStore.Provider value={value}>{children}</GracefulStore.Provider>
   )
 }

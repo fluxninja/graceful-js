@@ -7,7 +7,7 @@ export const createGracefulPropsWithFetch = async (clonedRes: Response) => {
   clonedRes.headers.forEach((value, key) => {
     recordHeaders = {
       ...recordHeaders,
-      [key]: value,
+      [key.toLocaleLowerCase()]: value,
     }
   })
   const props: Omit<GracefulContextProps, 'method'> = {
@@ -21,41 +21,17 @@ export const createGracefulPropsWithFetch = async (clonedRes: Response) => {
   return props
 }
 
-export const createGracefulPropsWithXMLHttpRequest = (res: XMLHttpRequest) => {
-  const responseHeaders = res.getAllResponseHeaders()
-  // Parse the response headers into an object
-  let headersObj = {}
-  responseHeaders.split('\r\n').forEach((header) => {
-    const [name, value] = header.split(': ')
-    if (name && value) {
-      headersObj = {
-        ...headersObj,
-        [name]: value,
-      }
-    }
-  })
-
-  const props: Omit<GracefulContextProps, 'method'> = {
-    headers: headersObj,
-    status: res.status,
-    url: res.responseURL,
-    isError: res.status < 200 || res.status >= 400,
-    responseBody: (() => {
-      try {
-        return JSON.parse(res.responseText)
-      } catch (e) {
-        return null
-      }
-    })(),
-    typeOfRequest: 'XML',
-  }
-
-  return props
-}
-
 export const createGracefulPropsWithAxios = (res: AxiosResponse) => {
+  const lowerCaseHeaders = Object.keys(res.headers).reduce(
+    (value, key) => ({
+      ...value,
+      [key.toLocaleLowerCase()]: res.headers[key],
+    }),
+    {}
+  )
+
   const props: GracefulContextProps = {
-    headers: res.headers as Record<string, string>,
+    headers: lowerCaseHeaders,
     status: res.status,
     url: `${res.config.baseURL}${res.config.url}` || '',
     isError: res.status < 200 || res.status >= 400,
