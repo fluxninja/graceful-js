@@ -25,6 +25,8 @@ export declare type GracefulContext = {
 export declare type GracefulProps = GracefulContext & {
   setGraceful: Dispatch<SetStateAction<GracefulProps>>
   theme?: GracefulTheme
+  errorComponentMap?: Map<number, JSX.Element>
+  DefaultErrorComponent?: JSX.Element
 }
 
 export const initialContextProps: GracefulContext = {

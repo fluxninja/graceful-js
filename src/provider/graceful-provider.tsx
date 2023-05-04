@@ -14,6 +14,8 @@ export declare type Config = {
   axios?: AxiosInstance
   urlList?: string[]
   theme?: GracefulTheme
+  errorComponentMap?: Map<number, JSX.Element>
+  DefaultErrorComponent?: JSX.Element
 }
 
 export interface GracefulProviderProps {
@@ -33,6 +35,12 @@ export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
     () => ({
       ...context,
       ...(config?.theme && { theme: config.theme }),
+      ...(config?.errorComponentMap && {
+        errorComponentMap: config.errorComponentMap,
+      }),
+      ...(config?.DefaultErrorComponent && {
+        DefaultErrorComponent: config.DefaultErrorComponent,
+      }),
       setGraceful,
     }),
     [context]

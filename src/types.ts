@@ -42,4 +42,4 @@ export declare type FetchScenariosFnc = (
   res: Response
 ) => Promise<Response>
 
-export declare type GracefulErrorStatus = 429 | 500 | 503 | 504
+export declare type GracefulErrorStatus = 429 | 503 | 504

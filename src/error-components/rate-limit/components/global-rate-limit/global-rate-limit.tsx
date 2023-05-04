@@ -44,6 +44,18 @@ export const GlobalRateLimit: FC<PropsWithChildren<GlobalRateLimitProps>> = ({
   const {
     ctx: { retriesLeft },
   } = useGraceful()
+
+  const typographyCommonProps: TypographyProps = {
+    fontSize: 16,
+    fontWeight: '400',
+    sx: {
+      width: '90%',
+      margin: '0 auto',
+      textAlign: 'center',
+      color: theme.text,
+    },
+  }
+
   return (
     <Dialog
       {...{
@@ -56,7 +68,7 @@ export const GlobalRateLimit: FC<PropsWithChildren<GlobalRateLimitProps>> = ({
       }}
     >
       <GlobalRateLimitStyled>
-        <ErrorIcon htmlColor={theme.primary} sx={{ width: 450, height: 350 }} />
+        <ErrorIcon sx={{ width: 450, height: 350 }} />
         <Typography
           {...{
             fontSize: 36,
@@ -71,16 +83,6 @@ export const GlobalRateLimit: FC<PropsWithChildren<GlobalRateLimitProps>> = ({
       </GlobalRateLimitStyled>
     </Dialog>
   )
-}
-
-export const typographyCommonProps: TypographyProps = {
-  fontSize: 16,
-  fontWeight: '400',
-  sx: {
-    width: '90%',
-    margin: '0 auto',
-    textAlign: 'center',
-  },
 }
 
 export const ApplyGlobalRateLimitError: FC<PropsWithChildren> = ({

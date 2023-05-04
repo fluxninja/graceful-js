@@ -127,6 +127,6 @@ export const checkHeaderAndBody = (
   return {
     retryAfter,
     retryLimit,
-    check: !retryAfter,
+    check: !!retryAfter,
   }
 }

@@ -3,7 +3,7 @@ import { FC } from 'react'
 import { RateLimitGrid, RateLimitWrapper } from './styled'
 import { ErrorIcon } from '../../../error-icon'
 import { useGracefulTheme } from '../../../../hooks'
-import { Paper, Typography } from '@mui/material'
+import { Paper, Typography, TypographyProps } from '@mui/material'
 import { DefaultText } from '../../../types'
 
 type RateLimitInitialText =
@@ -54,6 +54,12 @@ export const RateLimitInitial: FC<RateLimitInitialProps> = ({
 }) => {
   const theme = useGracefulTheme()
 
+  const commonCss: TypographyProps = {
+    sx: {
+      color: theme.text,
+    },
+  }
+
   return (
     <>
       <RateLimitGrid>
@@ -61,6 +67,7 @@ export const RateLimitInitial: FC<RateLimitInitialProps> = ({
         <RateLimitWrapper>
           <Typography
             {...{
+              ...commonCss,
               fontSize: 24,
               fontWeight: '700',
               lineHeight: '29px',
@@ -70,6 +77,7 @@ export const RateLimitInitial: FC<RateLimitInitialProps> = ({
           </Typography>
           <Typography
             {...{
+              ...commonCss,
               fontSize: 16,
               fontWeight: '600',
               lineHeight: '130%',
@@ -86,6 +94,7 @@ export const RateLimitInitial: FC<RateLimitInitialProps> = ({
       <RateLimitWrapper>
         <Typography
           {...{
+            ...commonCss,
             fontSize: 16,
             fontWeight: '400',
             lineHeight: '130%',
@@ -95,6 +104,7 @@ export const RateLimitInitial: FC<RateLimitInitialProps> = ({
         </Typography>
         <Typography
           {...{
+            ...commonCss,
             fontSize: 16,
             fontWeight: '400',
             lineHeight: '130%',
