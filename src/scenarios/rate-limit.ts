@@ -10,6 +10,18 @@ export interface AxiosRequestConfigWithRetry extends AxiosRequestConfig {
 
 const originalFetch = window.fetch
 
+/**
+ * Retries a fetch request with rate limiting.
+ * @param setContext - React state setter for graceful context.
+ * @param url - Request URL.
+ * @param options - Fetch request options.
+ * @param res - Response object.
+ * @param retryAfter - Time in seconds to wait before retrying.
+ * @param retryLimit - Maximum number of retries.
+ * @param STATUS_CODE - HTTP status code to retry for.
+ * @returns Response object after successful retry or throws error if maximum retries exceeded.
+ */
+
 export const refetchWithRateLimit = async (
   setContext: Dispatch<SetStateAction<GracefulContext>>,
   url: RequestInfo | URL,
@@ -26,6 +38,7 @@ export const refetchWithRateLimit = async (
     const refetchRes = await originalFetch(url, options)
     const gracefulProps = await createGracefulPropsWithFetch(refetchRes.clone())
 
+    // Update context with new retry count and props
     setContext((prev) => ({
       ctx: {
         ...prev.ctx,
@@ -34,6 +47,7 @@ export const refetchWithRateLimit = async (
       },
     }))
 
+    // If maximum retries reached or response status code is not 429, return response
     if (count >= retryLimit || refetchRes.status !== STATUS_CODE) {
       if (gracefulProps.isError) {
         throw refetchRes

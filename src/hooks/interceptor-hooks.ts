@@ -7,7 +7,7 @@ import {
   createGracefulPropsWithAxios,
   fetchDecider,
 } from '../scenarios'
-import { AxiosInstance } from 'axios'
+import { AxiosInstance, AxiosResponse } from 'axios'
 import { GraphQLClient, RequestDocument, Variables } from 'graphql-request'
 import { VariablesAndRequestHeadersArgs } from 'graphql-request/build/esm/types'
 import type { TypedDocumentNode } from '@graphql-typed-document-node/core'
@@ -19,7 +19,7 @@ export const useInterceptors = (
   config?: Config
 ) => {
   const { urlList = [], axios = null } = config || {}
-  const baseSenariosBinded = baseSenarios.bind(
+  const baseSenariosBinded = baseScenarios.bind(
     null,
     setGracefulContext,
     urlList
@@ -31,7 +31,7 @@ export const useInterceptors = (
   }, [])
 }
 
-export declare type BaseSenarios = (
+export declare type BaseScenarios = (
   setGracefulContext: Dispatch<SetStateAction<GracefulContext>>,
   urlList: string[],
   url: RequestInfo | URL,
@@ -39,7 +39,7 @@ export declare type BaseSenarios = (
   res: Response
 ) => Promise<Response>
 
-export const baseSenarios: BaseSenarios = async (
+export const baseScenarios: BaseScenarios = async (
   setGracefulContext,
   urlList,
   url,
@@ -60,17 +60,26 @@ export const fetchInterceptor = (senarios: FetchScenariosFnc) => {
   }
 }
 
+export const axiosSuccess = (
+  setGracefulContext: Dispatch<SetStateAction<GracefulContext>>
+) => {
+  return async (res: AxiosResponse) => {
+    setGracefulContext({
+      ctx: createGracefulPropsWithAxios(res),
+    })
+    return res
+  }
+}
+
 export const axiosInterceptor = (
   setGracefulContext: Dispatch<SetStateAction<GracefulContext>>,
   axios: AxiosInstance | null
 ) => {
   if (!axios) return
-  axios.interceptors.response.use(async (res) => {
-    setGracefulContext({
-      ctx: createGracefulPropsWithAxios(res),
-    })
-    return res
-  }, axiosDecider(axios, setGracefulContext))
+  axios.interceptors.response.use(
+    axiosSuccess(setGracefulContext),
+    axiosDecider(axios, setGracefulContext)
+  )
 }
 
 export const gracefulGraphQLRequest = async <
