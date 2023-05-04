@@ -1,51 +1,60 @@
 import { useInterceptors } from '../hooks'
-import React, {
-  Dispatch,
-  FC,
-  PropsWithChildren,
-  SetStateAction,
-  createContext,
-  useState,
-} from 'react'
+import React, { FC, PropsWithChildren, useMemo, useState } from 'react'
+import {
+  GracefulContext,
+  GracefulProps,
+  GracefulStore,
+  GracefulTheme,
+  initialContextProps,
+  initialProps,
+} from './graceful-context'
+import { AxiosInstance } from 'axios'
 
-export declare type GracefulContextProps = {
-  headers: Record<string, string>
-  url: string
-  isError: boolean
-  status: number
-  responseBody: any | null
+/**
+ * Configuration object for the GracefulProvider component.
+ * @property {AxiosInstance} axios - An Axios instance to use for making HTTP requests.
+ * @property {string[]} urlList - A list of URLs to intercept and handle gracefully.
+ * @property {GracefulTheme} theme - The theme object to use for styling the error components.
+ * @property {Map<number, JSX.Element>} errorComponentMap - A map of HTTP status codes to custom error components to render for each code.
+ * @property {JSX.Element} DefaultErrorComponent - The default error component to render if no custom component is provided for a given status code.
+ */
+export declare type Config = {
+  axios?: AxiosInstance
+  urlList?: string[]
+  theme?: GracefulTheme
+  errorComponentMap?: Map<number, JSX.Element>
+  DefaultErrorComponent?: JSX.Element
 }
 
-export declare type UseInterceptorsHook = (
-  setContext: Dispatch<SetStateAction<GracefulContextProps>>
-) => void
-
-export const GracefulContext = createContext<GracefulContextProps>(
-  {} as GracefulContextProps
-)
-
 export interface GracefulProviderProps {
-  applyCustomInterceptors?: boolean
-  useInterceptorHook?: UseInterceptorsHook
+  config?: Config
 }
 
 export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
   children,
-  applyCustomInterceptors = false,
-  useInterceptorHook = () => {},
+  config,
 }) => {
-  const [context, setContext] = useState<GracefulContextProps>(
-    {} as GracefulContextProps
+  const [context, setContext] = useState<GracefulContext>(initialContextProps)
+  const [, setGraceful] = useState<GracefulProps>(initialProps)
+
+  useInterceptors(setContext, config)
+
+  const value: GracefulProps = useMemo(
+    () => ({
+      ...context,
+      ...(config?.theme && { theme: config.theme }),
+      ...(config?.errorComponentMap && {
+        errorComponentMap: config.errorComponentMap,
+      }),
+      ...(config?.DefaultErrorComponent && {
+        DefaultErrorComponent: config.DefaultErrorComponent,
+      }),
+      setGraceful,
+    }),
+    [context]
   )
 
-  useInterceptors(setContext, applyCustomInterceptors)
-  useInterceptorHook(setContext)
-
-  console.log('stored most recent context', context)
-
   return (
-    <GracefulContext.Provider value={context}>
-      {children}
-    </GracefulContext.Provider>
+    <GracefulStore.Provider value={value}>{children}</GracefulStore.Provider>
   )
 }
