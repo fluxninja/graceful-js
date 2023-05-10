@@ -2,28 +2,35 @@ import { pick } from 'lodash'
 import { GracefulContextProps } from '../provider'
 import { AxiosResponse } from 'axios'
 
-export const createGracefulPropsWithFetch = async (
+export declare type CreateGracefulPropsWithFetch = (
   clonedRes: Response
-): Promise<Omit<GracefulContextProps, 'method'>> => {
-  let recordHeaders = {}
-  clonedRes.headers.forEach((value, key) => {
-    recordHeaders = {
-      ...recordHeaders,
-      [key.toLocaleLowerCase()]: value,
-    }
-  })
-  return {
-    ...pick(clonedRes, 'url', 'status'),
-    isError: !clonedRes.ok,
-    headers: recordHeaders,
-    responseBody: await clonedRes.json(),
-    typeOfRequest: 'FETCH',
-  }
-}
+) => Promise<Omit<GracefulContextProps, 'method'>>
 
-export const createGracefulPropsWithAxios = (
+export const createGracefulPropsWithFetch: CreateGracefulPropsWithFetch =
+  async (clonedRes) => {
+    let recordHeaders = {}
+    clonedRes.headers.forEach((value, key) => {
+      recordHeaders = {
+        ...recordHeaders,
+        [key.toLocaleLowerCase()]: value,
+      }
+    })
+    return {
+      ...pick(clonedRes, 'url', 'status'),
+      isError: !clonedRes.ok,
+      headers: recordHeaders,
+      responseBody: await clonedRes.json(),
+      typeOfRequest: 'FETCH',
+    }
+  }
+
+export declare type CreateGracefulPropsWithAxios = (
   res: AxiosResponse
-): GracefulContextProps => {
+) => GracefulContextProps
+
+export const createGracefulPropsWithAxios: CreateGracefulPropsWithAxios = (
+  res
+) => {
   const lowerCaseHeaders = Object.keys(res.headers).reduce(
     (value, key) => ({
       ...value,
