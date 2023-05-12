@@ -41,7 +41,9 @@ export const fetchCollector: FetchCollector = async (
   res
 ) => {
   if (urlList.length && !urlList.includes(res.url)) return res
-  const gracefulProps = await createGracefulPropsWithFetch(res.clone())
+  const gracefulProps = await createGracefulPropsWithFetch(
+    res?.clone ? res.clone() : res
+  )
 
   setGracefulContext({
     ctx: {

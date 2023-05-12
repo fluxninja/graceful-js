@@ -11,9 +11,8 @@ import {
   createGracefulPropsWithFetch,
 } from '../scenarios'
 import { AxiosResponse } from 'axios'
-import { initialContextProps } from '../provider'
 
-type AxiosOrFetch<T extends 'Axios' | 'Fetch'> = T extends 'Axios'
+export type AxiosOrFetch<T extends 'Axios' | 'Fetch'> = T extends 'Axios'
   ? AxiosResponse
   : Response
 
@@ -34,7 +33,7 @@ export const getGracefulProps = async (params: GetGracefulPropsParams) => {
     case 'Fetch':
       return await createGracefulPropsWithFetch(response.clone())
     default:
-      return initialContextProps.ctx
+      throw new Error('Invalid typeOfRequest parameter')
   }
 }
 
@@ -59,7 +58,13 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch'>(
   if (!err) {
     return lastValueFrom(requestObservable)
   }
-  const sendableRes = typeOfRequest === 'Axios' ? err?.response : err?.clone()
+  const sendableRes =
+    typeOfRequest === 'Axios' ? err?.response : err?.clone ? err.clone() : null
+
+  if (!sendableRes) {
+    throw err
+  }
+
   const { headers, responseBody: data } =
     (await getGracefulProps({
       typeOfRequest,
