@@ -6,10 +6,6 @@ To use `graceful-js` with browser fetch. You just have to wrap your app with `Gr
   <App />
 </GracefulProvider>
 ```
-By doing so, graceful-js will intercept every fetch request response and will do its magic behind the scenes.
-Graceful-js will do the following:
-- Provide different `ui` components for each scenario.
-- Read information from the body or headers. If a request fails, it will first look into the body of the error response then headers and see if it has the required information to do a retry in case of rate limit.
 
 The only thing a user has to do after wrapping their app with `GracefulProvider` is to use `GracefulError` component as their primary error component, and it will take care of the rest. This error component renders different components according to the status code.
 
@@ -38,15 +34,48 @@ import { GracefulProvider } from 'graceful-js';
 
 const App:FC = () => (
 <ThemeProvider>
-	<GracefulProvider config={yourConfigObject}>
-		<AppComponent />
-	</GracefulProvider>
+ <GracefulProvider config={yourConfigObject}>
+   <AppComponent />
+ </GracefulProvider>
 </ThemeProvider>
 )
 ```
-Then use `GracefulError` component:
+To get support for the rate limit headers and body use `gracefulRequest` instead of a regular fetch or axios. This function will retry according to the provided parameters. While using `gracefulRequest` function make sure you throw error in case of `fetch`. Here is how you use `gracefulRequest` with `Axios` and `fetch`. 
+
 ```javascript
-import { GracefulProvider, GracefulError } from 'graceful-js';
+import { gracefulRequest } from 'graceful-js';
+
+// gracefulRequest with Axios
+   gracefulRequest('Axios', () => api.get(/api), (err, success) => {
+       if(err){
+       	// action on error
+	return
+       }
+       // action on success
+    })
+    
+// gracefulRequest with fetch
+   gracefulRequest('Fetch', 
+    () => fetch('yourEndPoint').then((res) => {
+      if(!res.ok){
+        throw res
+      }
+      return res
+    }), 
+    (err, success) => {
+      if(err){
+        // action on error
+        return
+      }
+      // action on success
+    })
+```
+Callback in `gracefulRequest` emit error or success response on every retry and it resolves with a promise once retries are done. This callback can be useful to show error to the user right away without waiting for the function to get resolved. 
+
+
+You can then use `GracefulError` component like so:
+```javascript
+import { GracefulProvider, GracefulError, gracefulRequest } from 'graceful-js';
 const api = axios.create({
 	baseUrl: "yourbaseurl",
 	headers: {}
@@ -55,27 +84,30 @@ const api = axios.create({
 const AppComponent = () => {
 const [err, setErr] = React.useState(false)
   const apiCall = () => {
-		api.get('/api').then(() => {
-			setErr(false)
-     }).catch((err) => {
-			console.error(err)
-			setErr(true)
-		})
-	}
+    gracefulRequest('Axios', () => api.get(/api), (err, success) => {
+       if(err){
+       	setErr(true)
+	return
+       }
+       setErr(false)
+    })
+ }
 
    return (
-			<>
-				{
-					err ? <GracefulError />:(
-							// code to render if no error
-						)
-				}
-			</>
+	<>
+	  {
+	   err ? <GracefulError />:(
+		// code to render if no error
+		<h1>Api call is successful</h1>
 		)
+	   }
+	   <button onClick={apiCall}>Click to fetch</button>
+	</>
+	)
 }
 ```
 
-In the case of graphql, the library currently supports `graphql-request`. To implement graceful-js, after creating a graphql client, instead of using `client.request`, just use gracefulGraphQLRequest. Here is the code snippet:
+In the case of graphql, the library currently supports `graphql-request`. To implement `graceful-js`, after creating a graphql client, instead of using `client.request`, just use `gracefulGraphQLRequest`. Here is the code snippet:
 
 ```javascript
 import { GraphQLClient, gql } from 'graphql-request';
@@ -95,20 +127,21 @@ export const queryHello = gql`
 export const useCharacterQuery = () => {
    return useQuery({
         queryKey: ['hello'],
-        queryFn: () => gracefulGraphQLRequest(
-					`${API_SERVICE_URL}/graphql`,
-					 gqlClient,
-					 queryHello,
-					 undefined,
-					 API_HEADERS
-				),
+        queryFn: () => 
+	gracefulGraphQLRequest(
+	  `${API_SERVICE_URL}/graphql`,
+           gqlClient,
+           queryHello,
+           undefined,
+           API_HEADERS
+	),
         enabled: false,
         retry: false,
     })
 }
 
 ```
-To implement graphql with any other graphql client, just add an extra fetch request before calling the graphql endpoint with the package. This fetch request will get intercepted by graceful-js.
+To implement graphql with any other graphql client, just add an extra `gracefulRequest` with fetch before calling the graphql endpoint with the package. This fetch request will get intercepted by graceful-js.
 
 ## Scenarios
 To get support for the rate limiting scenario by using the response body, send the following inside the error response body.
@@ -118,6 +151,8 @@ export declare type RateLimitResponseBody = {
   retryAfter: number // time in seconds after which retry will happen
   retryLimit: number // max number of retries if not resolved
   global: boolean // if true, full app is rate limited. ie. app is down
+  rateLimitRemaining: number // Remaining rate limit
+  rateLimitReset: number // delta seconds after which rate-limit will reset
 }
 ```
 To get support for rate limiting scenario by using headers. Add following headers:
@@ -135,9 +170,9 @@ export declare type RateLimitHeaders = {
    */
   'x-ratelimit-remaining': string
   /**
-   * The number of seconds until the rate limit resets
+   * The number of seconds(delta-seconds) until the rate limit resets
    */
-  'x-ratelimit-reset-after': string
+  'x-ratelimit-reset': string
   /**
    * Returned only on HTTP 429 responses if the rate limit encountered is the global rate limit (not per-route)
    */
@@ -153,4 +188,4 @@ export declare type RateLimitHeaders = {
   'retry-after': string
 }
 ```
-**NOTE**: Retry will occur regardless of the status code if a retry-after time is provided in headers or body. If a retry limit is not provided, retry will occur once.
+**NOTE**: Retry will occur regardless of the error status code if a retry-after time is provided in headers or body. Library will also check remaining rate limit, if it is zero no retry will happen.
