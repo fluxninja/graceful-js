@@ -3,14 +3,10 @@ import { Dispatch, SetStateAction, useEffect } from 'react'
 
 import { FetchScenariosFnc } from '../types'
 import {
-  axiosDecider,
   createGracefulPropsWithAxios,
-  fetchDecider,
+  createGracefulPropsWithFetch,
 } from '../scenarios'
-import { AxiosInstance, AxiosResponse } from 'axios'
-import { GraphQLClient, RequestDocument, Variables } from 'graphql-request'
-import { VariablesAndRequestHeadersArgs } from 'graphql-request/build/esm/types'
-import type { TypedDocumentNode } from '@graphql-typed-document-node/core'
+import { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 
 const { fetch: windowFetch } = window
 
@@ -19,7 +15,7 @@ export const useInterceptors = (
   config?: Config
 ) => {
   const { urlList = [], axios = null } = config || {}
-  const baseSenariosBinded = baseScenarios.bind(
+  const baseSenariosBinded = fetchCollector.bind(
     null,
     setGracefulContext,
     urlList
@@ -27,84 +23,89 @@ export const useInterceptors = (
 
   useEffect(() => {
     fetchInterceptor(baseSenariosBinded)
-    axiosInterceptor(setGracefulContext, axios)
+    axiosInterceptor(setGracefulContext, axios, urlList)
   }, [])
 }
 
-export declare type BaseScenarios = (
+export declare type FetchCollector = (
   setGracefulContext: Dispatch<SetStateAction<GracefulContext>>,
   urlList: string[],
-  url: RequestInfo | URL,
   options: RequestInit | undefined,
   res: Response
 ) => Promise<Response>
 
-export const baseScenarios: BaseScenarios = async (
+export const fetchCollector: FetchCollector = async (
   setGracefulContext,
   urlList,
-  url,
   options,
   res
 ) => {
   if (urlList.length && !urlList.includes(res.url)) return res
-  const decidedRes = await fetchDecider(setGracefulContext, url, options, res)
+  const gracefulProps = await createGracefulPropsWithFetch(res.clone())
 
-  return decidedRes
+  setGracefulContext({
+    ctx: {
+      ...gracefulProps,
+      method: options?.method || '',
+    },
+  })
+
+  return res
 }
 
 export const fetchInterceptor = (senarios: FetchScenariosFnc) => {
   window.fetch = async function (...args) {
-    const [url, options] = args
+    const [, options] = args
     const res = await windowFetch(...args)
-    return senarios(url, options, res)
+    return senarios(options, res)
   }
 }
 
-export const axiosSuccess = (
-  setGracefulContext: Dispatch<SetStateAction<GracefulContext>>
+export const axiosSuccessCollector = (
+  setGracefulContext: Dispatch<SetStateAction<GracefulContext>>,
+  urlList: string[]
 ) => {
   return async (res: AxiosResponse) => {
+    const ctx = createGracefulPropsWithAxios(res)
+    if (urlList.length && !urlList.includes(ctx.url)) {
+      return res
+    }
     setGracefulContext({
-      ctx: createGracefulPropsWithAxios(res),
+      ctx,
     })
     return res
   }
 }
 
+export const axiosErrorCollector = (
+  setContext: Dispatch<SetStateAction<GracefulContext>>,
+  urlList: string[]
+) => {
+  return async (error: AxiosError) => {
+    const { response } = error
+    if (!response) {
+      return Promise.reject(error)
+    }
+    const ctx = createGracefulPropsWithAxios(response)
+    if (urlList.length && !urlList.includes(ctx.url)) {
+      return Promise.reject(error)
+    }
+    setContext({
+      ctx: createGracefulPropsWithAxios(response),
+    })
+
+    return Promise.reject(error)
+  }
+}
+
 export const axiosInterceptor = (
   setGracefulContext: Dispatch<SetStateAction<GracefulContext>>,
-  axios: AxiosInstance | null
+  axios: AxiosInstance | null,
+  urlList: string[] = []
 ) => {
   if (!axios) return
   axios.interceptors.response.use(
-    axiosSuccess(setGracefulContext),
-    axiosDecider(axios, setGracefulContext)
+    axiosSuccessCollector(setGracefulContext, urlList),
+    axiosErrorCollector(setGracefulContext, urlList)
   )
-}
-
-export const gracefulGraphQLRequest = async <
-  T,
-  V extends Variables = Variables
->(
-  graphQLUrl: string,
-  client: GraphQLClient,
-  document: RequestDocument | TypedDocumentNode,
-  ...variablesAndRequestHeaders: VariablesAndRequestHeadersArgs<V>
-): Promise<T> => {
-  const [variables, requestHeaders] = variablesAndRequestHeaders
-  try {
-    await fetch(graphQLUrl, {
-      method: 'POST',
-      headers: requestHeaders as Headers,
-      body: JSON.stringify({
-        query: document,
-        variables: variables,
-      }),
-    })
-  } catch (e) {
-    console.error(e)
-    throw e
-  }
-
-  return client.request<T, V>(document, ...variablesAndRequestHeaders)
 }

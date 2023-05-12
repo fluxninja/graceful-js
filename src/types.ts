@@ -39,7 +39,6 @@ export declare type RateLimitResponseBody = {
 }
 
 export declare type FetchScenariosFnc = (
-  url: RequestInfo | URL,
   options: RequestInit | undefined,
   res: Response
 ) => Promise<Response>

@@ -1,5 +1,10 @@
-import { defer, from, lastValueFrom, of, tap } from 'rxjs'
-import { delay, retry } from 'rxjs/operators'
+import { defer, from, lastValueFrom, tap, throwError, timer } from 'rxjs'
+import { catchError, concatMap, retryWhen } from 'rxjs/operators'
+
+import { GraphQLClient, RequestDocument, Variables } from 'graphql-request'
+import { VariablesAndRequestHeadersArgs } from 'graphql-request/build/esm/types'
+import type { TypedDocumentNode } from '@graphql-typed-document-node/core'
+
 import {
   checkHeaderAndBody,
   createGracefulPropsWithAxios,
@@ -9,23 +14,25 @@ import { AxiosResponse } from 'axios'
 import { initialContextProps } from '../provider'
 
 type AxiosOrFetch<T extends 'Axios' | 'Fetch'> = T extends 'Axios'
-  ? AxiosResponse<any, any>
+  ? AxiosResponse
   : Response
 
-export const getGracefulProps = async <
-  T extends 'Axios' | 'Fetch',
-  R extends AxiosOrFetch<T>
->(
-  typeOfRequest: T,
-  response: R
-) => {
+export declare type GetGracefulPropsParams =
+  | {
+      typeOfRequest: 'Axios'
+      response: AxiosOrFetch<'Axios'>
+    }
+  | {
+      typeOfRequest: 'Fetch'
+      response: AxiosOrFetch<'Fetch'>
+    }
+export const getGracefulProps = async (params: GetGracefulPropsParams) => {
+  const { typeOfRequest, response } = params
   switch (typeOfRequest) {
     case 'Axios':
-      return createGracefulPropsWithAxios(response as AxiosResponse)
+      return createGracefulPropsWithAxios(response)
     case 'Fetch':
-      return await createGracefulPropsWithFetch(
-        (response as unknown as Response).clone()
-      )
+      return await createGracefulPropsWithFetch(response.clone())
     default:
       return initialContextProps.ctx
   }
@@ -39,18 +46,25 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch'>(
     response: AxiosOrFetch<T> | null
   ) => void = () => {}
 ): Promise<AxiosOrFetch<T>> {
-  const requestObservable = defer(() => from(promiseFactory()))
-  let err: any
+  const requestObservable = defer(() => from(promiseFactory())).pipe(
+    tap((value) => callback(null, value))
+  )
+
+  let err: any = null
   try {
     await promiseFactory()
   } catch (error) {
     err = error
   }
-  const sendableRes = typeOfRequest === 'Axios' ? err.response : err.clone()
-  const { headers, responseBody: data } = await getGracefulProps(
-    typeOfRequest,
-    sendableRes
-  )
+  if (!err) {
+    return lastValueFrom(requestObservable)
+  }
+  const sendableRes = typeOfRequest === 'Axios' ? err?.response : err?.clone()
+  const { headers, responseBody: data } =
+    (await getGracefulProps({
+      typeOfRequest,
+      response: sendableRes,
+    })) || {}
   const {
     retryAfter = 0,
     retryLimit = 0,
@@ -59,16 +73,55 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch'>(
 
   const requestWithRetry = check
     ? requestObservable.pipe(
-        tap((res) => callback(null, res)),
-        retry({
-          count: retryLimit,
-          delay: (error) => {
-            callback(error, null)
-            return of(error).pipe(delay(~~retryAfter * 1000))
-          },
-        })
+        catchError((error) => {
+          callback(error, null)
+          return throwError(error)
+        }),
+        retryWhen((errors) =>
+          errors.pipe(
+            concatMap((error, i) => {
+              callback(error, null)
+              return i < retryLimit - 1
+                ? timer(~~retryAfter * 1000).pipe(
+                    tap(() => callback(error, null))
+                  )
+                : throwError(error)
+            })
+          )
+        )
       )
     : requestObservable
 
   return lastValueFrom(requestWithRetry)
+}
+
+export const gracefulGraphQLRequest = async <
+  T,
+  V extends Variables = Variables
+>(
+  graphQLUrl: string,
+  client: GraphQLClient,
+  document: RequestDocument | TypedDocumentNode,
+  ...variablesAndRequestHeaders: VariablesAndRequestHeadersArgs<V>
+): Promise<T> => {
+  const [variables, requestHeaders] = variablesAndRequestHeaders
+  try {
+    await gracefulRequest('Fetch', () =>
+      fetch(graphQLUrl, {
+        method: 'POST',
+        headers: requestHeaders as Headers,
+        body: JSON.stringify({
+          query: document,
+          variables: variables,
+        }),
+      }).then((res) => {
+        if (!res.ok) throw res
+        return res
+      })
+    )
+  } catch (e) {
+    throw e
+  }
+
+  return client.request<T, V>(document, ...variablesAndRequestHeaders)
 }
