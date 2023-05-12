@@ -24,11 +24,11 @@ export const DefaultError: FC<{
       <ErrorIcon sx={{ width: '100%', height: 250 }} />
       <Typography
         {...{
-          sx: ({ palette }) => ({
-            color: palette.error.main,
+          sx: {
+            color: theme.secondary,
             fontWeight: '700',
             fontSize: '16px',
-          }),
+          },
         }}
       >{`Error ${status}: ${text.message}`}</Typography>
     </DefaultErrorStyled>

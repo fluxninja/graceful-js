@@ -5,6 +5,7 @@ import { ErrorIcon } from '../../../error-icon'
 import { useGracefulTheme } from '../../../../hooks'
 import { Paper, Typography, TypographyProps } from '@mui/material'
 import { DefaultText } from '../../../types'
+import { useMostRecentError } from '../../../decider'
 
 type RateLimitInitialText =
   | 'sorry'
@@ -60,10 +61,21 @@ export const RateLimitInitial: FC<RateLimitInitialProps> = ({
     },
   }
 
+  const {
+    ctx: { headers, responseBody },
+  } = useMostRecentError()
+
+  const deltaSeconds =
+    responseBody?.rateLimitReset ?? headers?.['x-ratelimit-reset'] ?? 0
+
+  const resetTime = new Date()
+
+  resetTime.setSeconds(resetTime.getSeconds() + deltaSeconds)
+
   return (
     <>
       <RateLimitGrid>
-        <ErrorIcon htmlColor={theme.primary} sx={{ width: 120, height: 75 }} />
+        <ErrorIcon htmlColor={theme.primary} sx={{ width: 200, height: 125 }} />
         <RateLimitWrapper>
           <Typography
             {...{
@@ -101,6 +113,19 @@ export const RateLimitInitial: FC<RateLimitInitialProps> = ({
           }}
         >
           {text.message}
+        </Typography>
+        <Typography
+          {...{
+            ...commonCss,
+            fontSize: 16,
+            fontWeight: '400',
+            lineHeight: '130%',
+            color: theme.secondary,
+          }}
+        >
+          {deltaSeconds
+            ? `Please try again after ${resetTime.toUTCString()}`
+            : null}
         </Typography>
         <Typography
           {...{

@@ -11,9 +11,9 @@ export declare type RateLimitHeaders = {
    */
   'x-ratelimit-remaining': string
   /**
-   * The number of seconds until the rate limit resets
+   * The number of seconds(delta-seconds) until the rate limit resets
    */
-  'x-ratelimit-reset-after': string
+  'x-ratelimit-reset': string
   /**
    * Returned only on HTTP 429 responses if the rate limit encountered is the global rate limit (not per-route)
    */
@@ -33,11 +33,12 @@ export declare type RateLimitResponseBody = {
   message: string
   retryAfter: number
   retryLimit: number
+  rateLimitRemaining: number
+  rateLimitReset: number
   global: boolean
 }
 
 export declare type FetchScenariosFnc = (
-  url: RequestInfo | URL,
   options: RequestInit | undefined,
   res: Response
 ) => Promise<Response>
