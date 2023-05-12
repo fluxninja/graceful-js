@@ -37,6 +37,14 @@ export const getGracefulProps = async (params: GetGracefulPropsParams) => {
   }
 }
 
+/**
+ * Makes a graceful request using either Axios or Fetch.
+ *
+ * @param {'Axios' | 'Fetch'} typeOfRequest - The type of request to make.
+ * @param {() => Promise<AxiosOrFetch<T>>} promiseFactory - A function that returns a promise that resolves to the response object.
+ * @param {(err: AxiosOrFetch<T> | null, response: AxiosOrFetch<T> | null) => void} [callback=() => {}] - An optional callback function that is called with the error and response objects.
+ * @returns {Promise<AxiosOrFetch<T>>} - A promise that resolves to the response object.
+ */
 export async function gracefulRequest<T extends 'Axios' | 'Fetch'>(
   typeOfRequest: T,
   promiseFactory: () => Promise<AxiosOrFetch<T>>,
