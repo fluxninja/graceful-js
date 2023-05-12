@@ -6,7 +6,7 @@
   "scripts": {
     "build": "npm run format && rm -rf dist && tsc",
     "format": "prettier --write ./src/**/*.{ts,tsx}",
-    "lint": "eslint .",
+    "lint": "eslint --ext .ts,.tsx ./src",
     "test": "jest --config jestconfig.json",
     "link-local": "npm link && cd node_modules/react && npm link && cd ../react-dom && npm link",
     "unlink-local": "npm unlink && cd node_modules/react && npm unlink && cd ../react-dom && npm unlink"
@@ -25,6 +25,7 @@
     "eslint": "8.38.0",
     "eslint-config-prettier": "8.8.0",
     "eslint-plugin-jsx-a11y": "6.7.1",
+    "eslint-plugin-prettier": "4.2.1",
     "eslint-plugin-react": "7.32.2",
     "eslint-plugin-react-hooks": "4.6.0",
     "jest": "29.5.0",

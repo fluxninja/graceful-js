@@ -42,7 +42,6 @@ export const fetchDecider = async (
   res: Response
 ) => {
   const gracefulProps = await createGracefulPropsWithFetch(res.clone())
-  const { headers, responseBody } = gracefulProps
 
   setContext({
     ctx: {
@@ -52,17 +51,6 @@ export const fetchDecider = async (
   })
 
   return res
-
-  // return gracefulProps.isError
-  //   ? await handleGracefullyFetch(
-  //       setContext,
-  //       url,
-  //       options,
-  //       res,
-  //       headers,
-  //       responseBody
-  //     )
-  //   : res
 }
 
 export const handleGracefullyAxios = async (
@@ -94,7 +82,7 @@ export const handleGracefullyAxios = async (
 }
 
 export const axiosDecider = (
-  axios: AxiosInstance,
+  _: AxiosInstance,
   setContext: Dispatch<SetStateAction<GracefulContext>>
 ) => {
   return async (error: AxiosError) => {
@@ -107,9 +95,7 @@ export const axiosDecider = (
       ctx: createGracefulPropsWithAxios(response),
     })
 
-    return error
-
-    //return await handleGracefullyAxios(setContext, error, axios)
+    return Promise.reject(error)
   }
 }
 
