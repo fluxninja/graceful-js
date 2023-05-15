@@ -9,7 +9,7 @@ import { DefaultText } from '../types'
 export type DefaultErrorText = 'message'
 
 export const defaultErrorText: DefaultText<DefaultErrorText, string> = {
-  message: 'something went wrong',
+  message: 'Something went wrong.',
 }
 
 export const DefaultError: FC<{
@@ -27,7 +27,6 @@ export const DefaultError: FC<{
           sx: {
             color: theme.secondary,
             fontWeight: '700',
-            fontSize: '16px',
           },
         }}
       >{`Error ${status}: ${text.message}`}</Typography>

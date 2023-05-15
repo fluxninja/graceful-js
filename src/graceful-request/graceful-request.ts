@@ -10,10 +10,14 @@ import {
   createGracefulPropsWithAxios,
   createGracefulPropsWithFetch,
 } from '../scenarios'
-import { AxiosResponse } from 'axios'
+import { AxiosError, AxiosResponse } from 'axios'
 
 export type AxiosOrFetch<T extends 'Axios' | 'Fetch'> = T extends 'Axios'
   ? AxiosResponse
+  : Response
+
+export type AxiosOrFetchError<T extends 'Axios' | 'Fetch'> = T extends 'Axios'
+  ? AxiosError
   : Response
 
 export declare type GetGracefulPropsParams =
@@ -49,12 +53,16 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch'>(
   typeOfRequest: T,
   promiseFactory: () => Promise<AxiosOrFetch<T>>,
   callback: (
-    err: AxiosOrFetch<T> | null,
+    err: AxiosOrFetchError<T> | null,
     response: AxiosOrFetch<T> | null
   ) => void = () => {}
 ): Promise<AxiosOrFetch<T>> {
   const requestObservable = defer(() => from(promiseFactory())).pipe(
-    tap((value) => callback(null, value))
+    tap((value) => callback(null, value)),
+    catchError((error) => {
+      callback(error, null)
+      return throwError(error)
+    })
   )
 
   let err: any = null
@@ -70,7 +78,7 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch'>(
     typeOfRequest === 'Axios' ? err?.response : err?.clone ? err.clone() : null
 
   if (!sendableRes) {
-    return err
+    return lastValueFrom(requestObservable)
   }
 
   const { headers, responseBody: data } =
@@ -86,10 +94,6 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch'>(
 
   const requestWithRetry = check
     ? requestObservable.pipe(
-        catchError((error) => {
-          callback(error, null)
-          return throwError(error)
-        }),
         retryWhen((errors) =>
           errors.pipe(
             concatMap((error, i) => {

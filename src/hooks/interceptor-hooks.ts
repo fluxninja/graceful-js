@@ -1,4 +1,4 @@
-import { Config, GracefulContext } from '../provider'
+import { Config, GracefulContext, initialContextProps } from '../provider'
 import { Dispatch, SetStateAction, useEffect } from 'react'
 
 import { FetchScenariosFnc } from '../types'
@@ -87,6 +87,14 @@ export const axiosErrorCollector = (
   return async (error: AxiosError) => {
     const { response } = error
     if (!response) {
+      setContext({
+        ctx: {
+          ...initialContextProps.ctx,
+          method: (error?.config && error.config.method) || '',
+          isError: true,
+          status: error.status || 404,
+        },
+      })
       return Promise.reject(error)
     }
     const ctx = createGracefulPropsWithAxios(response)
