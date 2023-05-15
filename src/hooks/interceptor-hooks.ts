@@ -7,6 +7,7 @@ import {
   createGracefulPropsWithFetch,
 } from '../scenarios'
 import { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
+import { cloneDeep } from 'lodash'
 
 const { fetch: windowFetch } = window
 
@@ -42,7 +43,7 @@ export const fetchCollector: FetchCollector = async (
 ) => {
   if (urlList.length && !urlList.includes(res.url)) return res
   const gracefulProps = await createGracefulPropsWithFetch(
-    res?.clone ? res.clone() : res
+    res?.clone ? res.clone() : cloneDeep(res)
   )
 
   setGracefulContext({

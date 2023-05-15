@@ -70,7 +70,7 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch'>(
     typeOfRequest === 'Axios' ? err?.response : err?.clone ? err.clone() : null
 
   if (!sendableRes) {
-    throw err
+    return err
   }
 
   const { headers, responseBody: data } =
@@ -93,7 +93,6 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch'>(
         retryWhen((errors) =>
           errors.pipe(
             concatMap((error, i) => {
-              callback(error, null)
               return i < retryLimit - 1
                 ? timer(~~retryAfter * 1000).pipe(
                     tap(() => callback(error, null))
