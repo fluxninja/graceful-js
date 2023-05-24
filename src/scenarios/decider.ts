@@ -1,3 +1,5 @@
+import { getResetTime } from './utils'
+
 export const checkHeaderAndBody = (
   data: any,
   headers: Record<Lowercase<string>, string>
@@ -19,6 +21,8 @@ export const checkHeaderAndBody = (
   return {
     retryAfter,
     retryLimit,
+    rateLimitRemaining,
+    resetAfter: getResetTime(data, headers),
     check: !rateLimitRemaining ? false : !!retryAfter,
   }
 }

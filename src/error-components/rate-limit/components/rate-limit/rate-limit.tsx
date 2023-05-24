@@ -6,6 +6,7 @@ import { useGracefulTheme } from '../../../../hooks'
 import { Paper, Typography, TypographyProps } from '@mui/material'
 import { DefaultText } from '../../../types'
 import { useMostRecentError } from '../../../decider'
+import { getResetTime } from '../../../../scenarios'
 
 type RateLimitInitialText =
   | 'sorry'
@@ -65,12 +66,7 @@ export const RateLimitInitial: FC<RateLimitInitialProps> = ({
     ctx: { headers, responseBody },
   } = useMostRecentError()
 
-  const deltaSeconds =
-    responseBody?.rateLimitReset ?? headers?.['x-ratelimit-reset'] ?? 0
-
-  const resetTime = new Date()
-
-  resetTime.setSeconds(resetTime.getSeconds() + deltaSeconds)
+  const { resetTime, deltaSeconds } = getResetTime(responseBody, headers)
 
   return (
     <>

@@ -12,13 +12,23 @@ import {
 } from '../scenarios'
 import { AxiosError, AxiosResponse } from 'axios'
 
+export declare type RateLimitInfo = {
+  retryAfter: number
+  retryLimit: number
+  rateLimitRemaining: number
+  resetAfter: {
+    resetTime?: Date
+    deltaSeconds: any
+  }
+}
+
 export type AxiosOrFetch<T extends 'Axios' | 'Fetch'> = T extends 'Axios'
-  ? AxiosResponse
-  : Response
+  ? AxiosResponse & { rateLimitInfo?: RateLimitInfo }
+  : Response & { rateLimitInfo?: RateLimitInfo }
 
 export type AxiosOrFetchError<T extends 'Axios' | 'Fetch'> = T extends 'Axios'
-  ? AxiosError
-  : Response
+  ? AxiosError & { rateLimitInfo?: RateLimitInfo }
+  : Response & { rateLimitInfo?: RateLimitInfo }
 
 export declare type GetGracefulPropsParams =
   | {
@@ -89,8 +99,17 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch'>(
   const {
     retryAfter = 0,
     retryLimit = 0,
+    rateLimitRemaining = 0,
+    resetAfter = { deltaSeconds: 0 },
     check,
   } = checkHeaderAndBody(data, headers) || {}
+
+  const rateLimitInfo: RateLimitInfo = {
+    retryAfter,
+    retryLimit,
+    rateLimitRemaining,
+    resetAfter,
+  }
 
   const requestWithRetry = check
     ? requestObservable.pipe(
@@ -99,9 +118,9 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch'>(
             concatMap((error, i) => {
               return i < retryLimit - 1
                 ? timer(~~retryAfter * 1000).pipe(
-                    tap(() => callback(error, null))
+                    tap(() => callback({ ...error, rateLimitInfo }, null))
                   )
-                : throwError(error)
+                : throwError({ ...error, rateLimitInfo })
             })
           )
         )

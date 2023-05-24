@@ -63,3 +63,17 @@ export const createGracefulPropsWithAxios: CreateGracefulPropsWithAxios = (
     method: res.config.method || '',
   }
 }
+
+export const getResetTime = (
+  responseBody: any,
+  headers: Record<string, string>
+) => {
+  const deltaSeconds =
+    responseBody?.rateLimitReset ?? headers?.['x-ratelimit-reset'] ?? 0
+
+  const resetTime = new Date()
+
+  resetTime.setSeconds(resetTime.getSeconds() + deltaSeconds)
+
+  return { resetTime, deltaSeconds }
+}
