@@ -43,5 +43,9 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "rxjs": "^7.8.1"
+  },
+  "publishConfig": {
+    "access": "public",
+    "scope": "@fluxninja-tools"
   }
 }
