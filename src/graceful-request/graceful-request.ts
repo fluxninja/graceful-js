@@ -67,30 +67,23 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch'>(
     response: AxiosOrFetch<T> | null
   ) => void = () => {}
 ): Promise<AxiosOrFetch<T>> {
-  const requestObservable = defer(() => from(promiseFactory())).pipe(
-    tap((value) => callback(null, value)),
-    catchError((error) => {
-      callback(error, null)
-      return throwError(error)
-    })
-  )
-
   let err: any = null
+  let responsePromise: AxiosOrFetch<T> | null = null
   try {
-    await promiseFactory()
+    responsePromise = await promiseFactory()
   } catch (error) {
     err = error
   }
-  if (!err) {
-    return lastValueFrom(requestObservable)
+  if (!err && responsePromise) {
+    callback(null, responsePromise)
+    return responsePromise
   }
   const sendableRes =
     typeOfRequest === 'Axios' ? err?.response : err?.clone ? err.clone() : null
-
+  callback(err, null)
   if (!sendableRes) {
-    return lastValueFrom(requestObservable)
+    return err
   }
-
   const { headers, responseBody: data } =
     (await getGracefulProps({
       typeOfRequest,
@@ -103,20 +96,21 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch'>(
     resetAfter = { deltaSeconds: 0 },
     check,
   } = checkHeaderAndBody(data, headers) || {}
-
   const rateLimitInfo: RateLimitInfo = {
     retryAfter,
     retryLimit,
     rateLimitRemaining,
     resetAfter,
   }
-
   const requestWithRetry = check
-    ? requestObservable.pipe(
+    ? defer(() => from(promiseFactory())).pipe(
+        catchError((error) => {
+          return throwError(error)
+        }),
         retryWhen((errors) =>
           errors.pipe(
             concatMap((error, i) => {
-              return i < retryLimit - 1
+              return i < retryLimit
                 ? timer(~~retryAfter * 1000).pipe(
                     tap(() => callback({ ...error, rateLimitInfo }, null))
                   )
@@ -125,8 +119,7 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch'>(
           )
         )
       )
-    : requestObservable
-
+    : defer(() => from(promiseFactory()))
   return lastValueFrom(requestWithRetry)
 }
 

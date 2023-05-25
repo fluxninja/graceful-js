@@ -1,15 +1,13 @@
 {
   "name": "@fluxninja-tools/graceful-js",
-  "version": "1.0.0",
+  "version": "0.1.1",
   "description": "Frontend library for Graceful degradation",
   "main": "dist/index.js",
   "scripts": {
     "build": "npm run format && rm -rf dist && tsc",
     "format": "prettier --write ./src/**/*.{ts,tsx}",
     "lint": "eslint --ext .ts,.tsx ./src",
-    "test": "jest --config jestconfig.json",
-    "link-local": "npm link && cd node_modules/react && npm link && cd ../react-dom && npm link",
-    "unlink-local": "npm unlink && cd node_modules/react && npm unlink && cd ../react-dom && npm unlink"
+    "test": "jest --config jestconfig.json"
   },
   "files": [
     "dist"
