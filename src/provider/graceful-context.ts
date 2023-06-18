@@ -1,3 +1,4 @@
+import { AxiosInstance } from 'axios'
 import { noop } from 'lodash'
 import { Dispatch, SetStateAction, createContext } from 'react'
 
@@ -27,6 +28,7 @@ export declare type GracefulProps = GracefulContext & {
   theme?: GracefulTheme
   errorComponentMap?: Map<number, JSX.Element>
   DefaultErrorComponent?: JSX.Element
+  axios?: AxiosInstance
 }
 
 export const initialContextProps: GracefulContext = {

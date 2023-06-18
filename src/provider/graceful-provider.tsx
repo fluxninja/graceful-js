@@ -49,6 +49,7 @@ export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
       ...(config?.DefaultErrorComponent && {
         DefaultErrorComponent: config.DefaultErrorComponent,
       }),
+      axios: config?.axios,
       setGraceful,
     }),
     [context]

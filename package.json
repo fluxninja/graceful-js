@@ -1,6 +1,6 @@
 {
   "name": "@fluxninja-tools/graceful-js",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Frontend library for Graceful degradation",
   "main": "dist/index.js",
   "scripts": {

@@ -23,6 +23,6 @@ export const checkHeaderAndBody = (
     retryLimit,
     rateLimitRemaining,
     resetAfter: getResetTime(data, headers),
-    check: !rateLimitRemaining ? false : !!retryAfter,
+    check: !!retryAfter,
   }
 }

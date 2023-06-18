@@ -1,5 +1,5 @@
 import { defer, from, lastValueFrom, tap, throwError, timer } from 'rxjs'
-import { catchError, concatMap, retryWhen } from 'rxjs/operators'
+import { catchError, concatMap, finalize, retryWhen } from 'rxjs/operators'
 
 import { GraphQLClient, RequestDocument, Variables } from 'graphql-request'
 import { VariablesAndRequestHeadersArgs } from 'graphql-request/build/esm/types'
@@ -22,13 +22,25 @@ export declare type RateLimitInfo = {
   }
 }
 
-export type AxiosOrFetch<T extends 'Axios' | 'Fetch'> = T extends 'Axios'
-  ? AxiosResponse & { rateLimitInfo?: RateLimitInfo }
-  : Response & { rateLimitInfo?: RateLimitInfo }
+export type AxiosOrFetch<
+  T extends 'Axios' | 'Fetch',
+  TData = any
+> = T extends 'Axios'
+  ? AxiosResponse<TData> & { rateLimitInfo?: RateLimitInfo }
+  : Omit<Response, 'json'> & {
+      rateLimitInfo?: RateLimitInfo
+      json: () => Promise<TData>
+    }
 
-export type AxiosOrFetchError<T extends 'Axios' | 'Fetch'> = T extends 'Axios'
-  ? AxiosError & { rateLimitInfo?: RateLimitInfo }
-  : Response & { rateLimitInfo?: RateLimitInfo }
+export type AxiosOrFetchError<
+  T extends 'Axios' | 'Fetch',
+  TData = any
+> = T extends 'Axios'
+  ? AxiosError<TData> & { rateLimitInfo?: RateLimitInfo }
+  : Omit<Response, 'json'> & {
+      rateLimitInfo?: RateLimitInfo
+      json: () => Promise<TData>
+    }
 
 export declare type GetGracefulPropsParams =
   | {
@@ -59,23 +71,36 @@ export const getGracefulProps = async (params: GetGracefulPropsParams) => {
  * @param {(err: AxiosOrFetch<T> | null, response: AxiosOrFetch<T> | null) => void} [callback=() => {}] - An optional callback function that is called with the error and response objects.
  * @returns {Promise<AxiosOrFetch<T>>} - A promise that resolves to the response object.
  */
-export async function gracefulRequest<T extends 'Axios' | 'Fetch'>(
+export async function gracefulRequest<T extends 'Axios' | 'Fetch', TData = any>(
   typeOfRequest: T,
   promiseFactory: () => Promise<AxiosOrFetch<T>>,
   callback: (
-    err: AxiosOrFetchError<T> | null,
-    response: AxiosOrFetch<T> | null
+    err: AxiosOrFetchError<T, TData> | null,
+    response: AxiosOrFetch<T, TData> | null,
+    info?: {
+      isRetry?: boolean
+      isLoading?: boolean
+    }
   ) => void = () => {}
-): Promise<AxiosOrFetch<T>> {
+): Promise<AxiosOrFetch<T, TData>> {
   let err: any = null
   let responsePromise: AxiosOrFetch<T> | null = null
+  let isLoading = false
+  let isRetry = false
   try {
+    isLoading = true
     responsePromise = await promiseFactory()
+    isLoading = false
   } catch (error) {
+    isLoading = false
     err = error
   }
+  callback(null, null, { isLoading })
   if (!err && responsePromise) {
-    callback(null, responsePromise)
+    callback(null, responsePromise, {
+      isRetry,
+      isLoading,
+    })
     return responsePromise
   }
   const sendableRes =
@@ -112,7 +137,18 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch'>(
             concatMap((error, i) => {
               return i < retryLimit
                 ? timer(~~retryAfter * 1000).pipe(
-                    tap(() => callback({ ...error, rateLimitInfo }, null))
+                    tap(() =>
+                      callback({ ...error, rateLimitInfo }, null, {
+                        isRetry: true,
+                        isLoading: true,
+                      })
+                    ),
+                    finalize(() => {
+                      callback({ ...error, rateLimitInfo }, null, {
+                        isRetry: false,
+                        isLoading: false,
+                      })
+                    })
                   )
                 : throwError({ ...error, rateLimitInfo })
             })
@@ -120,6 +156,7 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch'>(
         )
       )
     : defer(() => from(promiseFactory()))
+
   return lastValueFrom(requestWithRetry)
 }
 
