@@ -1,16 +1,7 @@
 import { useTheme } from '@mui/material'
 import { GracefulStore, GracefulTheme } from '../provider'
-import {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
-import {
-  AxiosOrFetchError,
-  gracefulRequest,
-} from '../graceful-request'
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { AxiosOrFetchError, gracefulRequest } from '../graceful-request'
 import axios, { AxiosRequestConfig } from 'axios'
 
 export const useGraceful = () => useContext(GracefulStore)
@@ -79,7 +70,7 @@ export const useGracefulRequest = <T extends 'Axios' | 'Fetch', TData = any>(
       default:
         throw new Error('Invalid typeOfRequest parameter')
     }
-  }, [typeOfRequest, request, userApi])
+  }, [typeOfRequest, userApi])
 
   useEffect(() => {
     gracefulRequest<typeof typeOfRequest, TData>(

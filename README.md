@@ -1,6 +1,8 @@
 ## Graceful-js (FluxNinja UI package)
+
 Graceful-js is built on the concept of interceptors. It provides two types of interceptors: one is a fetch interceptor, and the other is an axios interceptor.
 To use `graceful-js` with browser fetch. You just have to wrap your app with `GracefulProvider` like so:
+
 ```javascript
 <GracefulProvider>
   <App />
@@ -10,7 +12,9 @@ To use `graceful-js` with browser fetch. You just have to wrap your app with `Gr
 The only thing a user has to do after wrapping their app with `GracefulProvider` is to use `GracefulError` component as their primary error component, and it will take care of the rest. This error component renders different components according to the status code.
 
 ## Custom Config
+
 Here is how you can configure `graceful-js` according to your needs. If you are using axios, make sure you pass the axios instance to the config. You can create an instance by using `axios.create`.
+
 ```javascript
 /**
  * Configuration object for the GracefulProvider component.
@@ -28,19 +32,22 @@ export declare type Config = {
   DefaultErrorComponent?: JSX.Element
 }
 ```
-Pass this config object to the `GracefulProvider` like so:
-```javascript
-import { GracefulProvider } from 'graceful-js';
 
-const App:FC = () => (
-<ThemeProvider>
- <GracefulProvider config={yourConfigObject}>
-   <AppComponent />
- </GracefulProvider>
-</ThemeProvider>
+Pass this config object to the `GracefulProvider` like so:
+
+```javascript
+import { GracefulProvider } from 'graceful-js'
+
+const App: FC = () => (
+  <ThemeProvider>
+    <GracefulProvider config={yourConfigObject}>
+      <AppComponent />
+    </GracefulProvider>
+  </ThemeProvider>
 )
 ```
-To get support for the rate limit headers and body use `gracefulRequest` instead of a regular fetch or axios. This function will retry according to the provided parameters. While using `gracefulRequest` function make sure you throw error in case of `fetch`. Here is how you use `gracefulRequest` with `Axios` and `fetch`. 
+
+To get support for the rate limit headers and body use `gracefulRequest` instead of a regular fetch or axios. This function will retry according to the provided parameters. While using `gracefulRequest` function make sure you throw error in case of `fetch`. Here is how you use `gracefulRequest` with `Axios` and `fetch`.
 
 ```javascript
 import { gracefulRequest } from 'graceful-js';
@@ -53,15 +60,15 @@ import { gracefulRequest } from 'graceful-js';
        }
        // action on success
     })
-    
+
 // gracefulRequest with fetch
-   gracefulRequest('Fetch', 
+   gracefulRequest('Fetch',
     () => fetch('yourEndPoint').then((res) => {
       if(!res.ok){
         throw res
       }
       return res
-    }), 
+    }),
     (err, success) => {
       if(err){
         // action on error
@@ -70,10 +77,11 @@ import { gracefulRequest } from 'graceful-js';
       // action on success
     })
 ```
-Callback in `gracefulRequest` emit error or success response on every retry and it resolves with a promise once retries are done. This callback can be useful to show error to the user right away without waiting for the function to get resolved. 
 
+Callback in `gracefulRequest` emit error or success response on every retry and it resolves with a promise once retries are done. This callback can be useful to show error to the user right away without waiting for the function to get resolved.
 
 You can then use `GracefulError` component like so:
+
 ```javascript
 import { GracefulProvider, GracefulError, gracefulRequest } from 'graceful-js';
 const api = axios.create({
@@ -110,41 +118,43 @@ const [err, setErr] = React.useState(false)
 In the case of graphql, the library currently supports `graphql-request`. To implement `graceful-js`, after creating a graphql client, instead of using `client.request`, just use `gracefulGraphQLRequest`. Here is the code snippet:
 
 ```javascript
-import { GraphQLClient, gql } from 'graphql-request';
-import { useQuery } from 'react-query';
-import { gracefulGraphQLRequest } from 'graceful-js';
+import { GraphQLClient, gql } from 'graphql-request'
+import { useQuery } from 'react-query'
+import { gracefulGraphQLRequest } from 'graceful-js'
 
-export const gqlClient =  new GraphQLClient(`${API_SERVICE_URL}/graphql`, {
-    headers: API_HEADERS,
-});
+export const gqlClient = new GraphQLClient(`${API_SERVICE_URL}/graphql`, {
+  headers: API_HEADERS,
+})
 
 export const queryHello = gql`
-    query hello{
-        hello
-    }
+  query hello {
+    hello
+  }
 `
 
 export const useCharacterQuery = () => {
-   return useQuery({
-        queryKey: ['hello'],
-        queryFn: () => 
-	gracefulGraphQLRequest(
-	  `${API_SERVICE_URL}/graphql`,
-           gqlClient,
-           queryHello,
-           undefined,
-           API_HEADERS
-	),
-        enabled: false,
-        retry: false,
-    })
+  return useQuery({
+    queryKey: ['hello'],
+    queryFn: () =>
+      gracefulGraphQLRequest(
+        `${API_SERVICE_URL}/graphql`,
+        gqlClient,
+        queryHello,
+        undefined,
+        API_HEADERS
+      ),
+    enabled: false,
+    retry: false,
+  })
 }
-
 ```
+
 To implement graphql with any other graphql client, just add an extra `gracefulRequest` with fetch before calling the graphql endpoint with the package. This fetch request will get intercepted by graceful-js.
 
 ## Scenarios
+
 To get support for the rate limiting scenario by using the response body, send the following inside the error response body.
+
 ```javascript
 export declare type RateLimitResponseBody = {
   message: string // message in the response
@@ -155,7 +165,9 @@ export declare type RateLimitResponseBody = {
   rateLimitReset: number // delta seconds after which rate-limit will reset
 }
 ```
+
 To get support for rate limiting scenario by using headers. Add following headers:
+
 ```javascript
 /**
  * Generic rate limit headers
@@ -188,4 +200,5 @@ export declare type RateLimitHeaders = {
   'retry-after': string
 }
 ```
+
 **NOTE**: Retry will occur regardless of the error status code if a retry-after time is provided in headers or body. Library will also check remaining rate limit, if it is zero no retry will happen.
