@@ -2,8 +2,7 @@ import { FC } from 'react'
 import { DefaultErrorStyled } from './styled'
 import { Paper, Typography } from '@mui/material'
 import { ErrorIcon } from '../error-icon'
-import { useGracefulTheme } from '../../hooks'
-import { useMostRecentError } from '../decider'
+import { useGraceful, useGracefulTheme } from '../../hooks'
 import { DefaultText } from '../types'
 
 export type DefaultErrorText = 'message'
@@ -15,9 +14,6 @@ export const defaultErrorText: DefaultText<DefaultErrorText, string> = {
 export const DefaultError: FC<{
   text?: DefaultText<DefaultErrorText, string>
 }> = ({ text = defaultErrorText }) => {
-  const {
-    ctx: { status },
-  } = useMostRecentError()
   const theme = useGracefulTheme()
   return (
     <DefaultErrorStyled component={Paper}>
@@ -29,7 +25,7 @@ export const DefaultError: FC<{
             fontWeight: '700',
           },
         }}
-      >{`Error ${status}: ${text.message}`}</Typography>
+      >{`${text.message}`}</Typography>
     </DefaultErrorStyled>
   )
 }

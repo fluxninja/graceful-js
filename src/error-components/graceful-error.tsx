@@ -1,28 +1,13 @@
 import React, { FC } from 'react'
-import { errorComponentMap, useMostRecentError } from './decider'
+import { useMostRecentError } from './decider'
 import { DefaultError } from './default-error'
-import { useGraceful } from '../hooks'
 
-export const GracefulError: FC = () => {
-  const {
-    ctx: { status, isError },
-  } = useMostRecentError()
+export interface GracefulErrorProps {
+  errorComponentID: string
+}
 
-  const {
-    errorComponentMap: userProvidedComponents,
-    DefaultErrorComponent: UserDefault,
-  } = useGraceful()
+export const GracefulError: FC<GracefulErrorProps> = ({ errorComponentID }) => {
+  const errToRender = useMostRecentError(errorComponentID)
 
-  if (!status) {
-    return null
-  }
-
-  if (!isError) {
-    return null
-  }
-
-  return (
-    (userProvidedComponents?.get(status) ?? UserDefault) ||
-    (errorComponentMap.get(status) ?? <DefaultError />)
-  )
+  return errToRender.get(errorComponentID)?.component || <DefaultError />
 }

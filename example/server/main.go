@@ -11,14 +11,20 @@ func main() {
 		return c.Status(429).JSON(fiber.Map{
 			"message": "You have reached the rate limit",
 			"retryAfter": 5,
-			"retryLimit": 3,
+			"retryLimit": 1,
 			"rateLimitRemaining": 20, 
 			"rateLimitReset": 50,
 		})
 	})
 
+	app.Get("/api/ping", func(c *fiber.Ctx) error {
+		return c.Status(422).JSON(fiber.Map{
+			"message": "pong",
+		})
+	})
 
-	err := app.Listen(":8080")
+
+	err := app.Listen(":8098")
 	if err != nil {
 		panic(err)
 	}

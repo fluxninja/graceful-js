@@ -1,14 +1,13 @@
 import { useInterceptors } from '../hooks'
 import React, { FC, PropsWithChildren, useMemo, useState } from 'react'
 import {
-  GracefulContext,
   GracefulProps,
   GracefulStore,
   GracefulTheme,
-  initialContextProps,
   initialProps,
 } from './graceful-context'
 import { AxiosInstance } from 'axios'
+import { ErrorComponentProvider } from '../error-components'
 
 /**
  * Configuration object for the GracefulProvider component.
@@ -34,14 +33,13 @@ export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
   children,
   config,
 }) => {
-  const [context, setContext] = useState<GracefulContext>(initialContextProps)
-  const [, setGraceful] = useState<GracefulProps>(initialProps)
+  const [props, setGraceful] = useState<GracefulProps>(initialProps)
 
-  useInterceptors(setContext, config)
+  useInterceptors(setGraceful, config)
 
   const value: GracefulProps = useMemo(
     () => ({
-      ...context,
+      ...props,
       ...(config?.theme && { theme: config.theme }),
       ...(config?.errorComponentMap && {
         errorComponentMap: config.errorComponentMap,
@@ -52,10 +50,12 @@ export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
       axios: config?.axios,
       setGraceful,
     }),
-    [context]
+    [config, props]
   )
 
   return (
-    <GracefulStore.Provider value={value}>{children}</GracefulStore.Provider>
+    <GracefulStore.Provider value={value}>
+      <ErrorComponentProvider>{children}</ErrorComponentProvider>
+    </GracefulStore.Provider>
   )
 }

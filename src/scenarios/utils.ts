@@ -15,6 +15,7 @@ export const createGracefulPropsWithFetch: CreateGracefulPropsWithFetch =
         [key.toLocaleLowerCase()]: value,
       }
     })
+
     return {
       ...pick(clonedRes, 'url', 'status'),
       isError: !clonedRes.ok,

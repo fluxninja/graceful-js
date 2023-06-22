@@ -1,67 +1,106 @@
-import { Config, GracefulContext, initialContextProps } from '../provider'
-import { Dispatch, SetStateAction, useEffect } from 'react'
+import {
+  Config,
+  GracefulContext,
+  GracefulProps,
+  initialContextProps,
+} from '../provider'
+import { Dispatch, SetStateAction, useEffect, useState } from 'react'
 
-import { FetchScenariosFnc } from '../types'
 import {
   createGracefulPropsWithAxios,
   createGracefulPropsWithFetch,
 } from '../scenarios'
 import { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
-import { cloneDeep } from 'lodash'
+import { cloneDeep, isEqual } from 'lodash'
 
 const { fetch: windowFetch } = window
 
+function setStateInInterceptor(newProps: GracefulContext) {
+  return (prev: GracefulContext) => {
+    if (isEqual(prev.ctx, newProps.ctx)) {
+      return prev
+    }
+
+    return {
+      ctx: newProps.ctx,
+    }
+  }
+}
+
 export const useInterceptors = (
-  setGracefulContext: Dispatch<SetStateAction<GracefulContext>>,
+  setGracefulProps: Dispatch<SetStateAction<GracefulProps>>,
   config?: Config
 ) => {
   const { urlList = [], axios = null } = config || {}
-  const baseSenariosBinded = fetchCollector.bind(
-    null,
-    setGracefulContext,
-    urlList
-  )
+  const [ctx, setContext] = useState<GracefulContext>(initialContextProps)
+
+  const f = fetchInterceptor({
+    setGracefulContext: setContext,
+    urlList,
+  })
+  const a = axiosInterceptor(setContext, axios, urlList)
 
   useEffect(() => {
-    fetchInterceptor(baseSenariosBinded)
-    axiosInterceptor(setGracefulContext, axios, urlList)
-  }, [])
+    return () => {
+      window.fetch = f
+      a && axios?.interceptors.response.eject(a)
+    }
+  }, [urlList, axios, a, f])
+
+  useEffect(() => {
+    setGracefulProps((prev) => ({
+      ...prev,
+      ...ctx,
+    }))
+  }, [ctx])
 }
 
-export declare type FetchCollector = (
-  setGracefulContext: Dispatch<SetStateAction<GracefulContext>>,
-  urlList: string[],
-  options: RequestInit | undefined,
+export declare type FetchCollector = {
+  setGracefulContext: Dispatch<SetStateAction<GracefulContext>>
+  urlList: string[]
+  options: RequestInit | undefined
   res: Response
-) => Promise<Response>
+}
 
-export const fetchCollector: FetchCollector = async (
+export const applyFetchCollector = async ({
   setGracefulContext,
   urlList,
   options,
-  res
-) => {
-  if (urlList.length && !urlList.includes(res.url)) return res
+  res,
+}: FetchCollector) => {
+  if (urlList.length && !urlList.includes(res.url)) {
+    return res
+  }
   const gracefulProps = await createGracefulPropsWithFetch(
     res?.clone ? res.clone() : cloneDeep(res)
   )
 
-  setGracefulContext({
-    ctx: {
-      ...gracefulProps,
-      method: options?.method || '',
-    },
-  })
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+
+  setGracefulContext(
+    setStateInInterceptor({
+      ctx: {
+        ...gracefulProps,
+        method: options?.method || '',
+      },
+    })
+  )
 
   return res
 }
 
-export const fetchInterceptor = (senarios: FetchScenariosFnc) => {
-  window.fetch = async function (...args) {
+export const fetchInterceptor = (
+  fetchCollector: Omit<FetchCollector, 'res' | 'options'>
+) => {
+  return (window.fetch = async function (...args) {
     const [, options] = args
     const res = await windowFetch(...args)
-    return senarios(options, res)
-  }
+    return applyFetchCollector({
+      ...fetchCollector,
+      options,
+      res,
+    })
+  })
 }
 
 export const axiosSuccessCollector = (
@@ -73,9 +112,7 @@ export const axiosSuccessCollector = (
     if (urlList.length && !urlList.includes(ctx.url)) {
       return res
     }
-    setGracefulContext({
-      ctx,
-    })
+    setGracefulContext(setStateInInterceptor({ ctx }))
     return res
   }
 }
@@ -87,23 +124,27 @@ export const axiosErrorCollector = (
   return async (error: AxiosError) => {
     const { response } = error
     if (!response) {
-      setContext({
-        ctx: {
-          ...initialContextProps.ctx,
-          method: (error?.config && error.config.method) || '',
-          isError: true,
-          status: error.status || 404,
-        },
-      })
+      setContext(
+        setStateInInterceptor({
+          ctx: {
+            ...initialContextProps.ctx,
+            method: (error?.config && error.config.method) || '',
+            isError: true,
+            status: error.status || 404,
+          },
+        })
+      )
       return Promise.reject(error)
     }
     const ctx = createGracefulPropsWithAxios(response)
     if (urlList.length && !urlList.includes(ctx.url)) {
       return Promise.reject(error)
     }
-    setContext({
-      ctx: createGracefulPropsWithAxios(response),
-    })
+    setContext(
+      setStateInInterceptor({
+        ctx: createGracefulPropsWithAxios(response),
+      })
+    )
 
     return Promise.reject(error)
   }
@@ -115,7 +156,7 @@ export const axiosInterceptor = (
   urlList: string[] = []
 ) => {
   if (!axios) return
-  axios.interceptors.response.use(
+  return axios.interceptors.response.use(
     axiosSuccessCollector(setGracefulContext, urlList),
     axiosErrorCollector(setGracefulContext, urlList)
   )

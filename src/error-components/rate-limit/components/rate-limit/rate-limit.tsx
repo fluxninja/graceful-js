@@ -2,10 +2,9 @@ import React from 'react'
 import { FC } from 'react'
 import { RateLimitGrid, RateLimitWrapper } from './styled'
 import { ErrorIcon } from '../../../error-icon'
-import { useGracefulTheme } from '../../../../hooks'
+import { useGraceful, useGracefulTheme } from '../../../../hooks'
 import { Paper, Typography, TypographyProps } from '@mui/material'
 import { DefaultText } from '../../../types'
-import { useMostRecentError } from '../../../decider'
 import { getResetTime } from '../../../../scenarios'
 
 type RateLimitInitialText =
@@ -64,7 +63,7 @@ export const RateLimitInitial: FC<RateLimitInitialProps> = ({
 
   const {
     ctx: { headers, responseBody },
-  } = useMostRecentError()
+  } = useGraceful()
 
   const { resetTime, deltaSeconds } = getResetTime(responseBody, headers)
 

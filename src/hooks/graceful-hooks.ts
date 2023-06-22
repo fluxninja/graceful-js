@@ -2,7 +2,7 @@ import { useTheme } from '@mui/material'
 import { GracefulStore, GracefulTheme } from '../provider'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { AxiosOrFetchError, gracefulRequest } from '../graceful-request'
-import axios, { AxiosRequestConfig } from 'axios'
+import { AxiosRequestConfig } from 'axios'
 
 export const useGraceful = () => useContext(GracefulStore)
 
@@ -29,6 +29,7 @@ export declare type UseGracefulRequestReturn<
 > = {
   isError: boolean
   isLoading: boolean
+  isRetry: boolean
   data: TData | null
   err: AxiosOrFetchError<T, TData> | null
 }
@@ -37,34 +38,32 @@ export const useGracefulRequest = <T extends 'Axios' | 'Fetch', TData = any>(
   request: UseGracefulRequestProps<T>
 ) => {
   const { typeOfRequest } = request
-  const { axios: userApi, ctx } = useGraceful()
+  const { axios: userApi } = useGraceful()
 
   const [state, setState] = useState<
     UseGracefulRequestReturn<typeof typeOfRequest>
   >({
     isError: false,
     isLoading: false,
+    isRetry: false,
     data: null,
     err: null,
   })
 
-  const gracefulError = useMemo(
-    () => ctx.url === request.url && ctx.isError,
-    [ctx]
-  )
-
-  const prepareRequest = useCallback(() => {
+  const prepareRequest = useCallback(async () => {
     switch (typeOfRequest) {
       case 'Axios':
-        return (
-          (userApi &&
-            userApi<TData>({
-              ...request,
-            })) ||
-          axios<TData>({
-            ...request,
-          })
-        )
+        if (!userApi) {
+          setState((prevState) => ({
+            ...prevState,
+            isError: true,
+            err: null,
+          }))
+          throw new Error('Missing axios instance')
+        }
+        return userApi<TData>({
+          ...request,
+        })
       case 'Fetch':
         return fetch(request.url, request)
       default:
@@ -73,54 +72,31 @@ export const useGracefulRequest = <T extends 'Axios' | 'Fetch', TData = any>(
   }, [typeOfRequest, userApi])
 
   useEffect(() => {
-    gracefulRequest<typeof typeOfRequest, TData>(
-      typeOfRequest,
-      () => prepareRequest(),
-      (err, res, { isLoading } = {}) => {
-        if (isLoading) {
-          setState((prevState) => ({
-            ...prevState,
-            isLoading,
-          }))
-        }
-
-        if (err) {
-          setState((prevState) => ({
-            ...prevState,
-            isError: true,
-            err,
-          }))
-        }
-
-        if (res) {
-          setState((prevState) => ({
-            ...prevState,
-            isError: false,
-            data: res,
-          }))
-        }
-      }
-    )
-      .then((res) => {
-        setState({
-          isError: false,
-          isLoading: false,
-          err: null,
-          data: res,
-        })
-      })
-      .catch((err) => {
-        setState({
+    const request = async () => {
+      try {
+        await gracefulRequest<typeof typeOfRequest, TData>(
+          typeOfRequest,
+          () => prepareRequest(),
+          (err, res, { isLoading, isRetry } = {}) => {
+            setState({
+              isLoading: !!isLoading,
+              isRetry: !!isRetry,
+              isError: !!err,
+              data: res,
+              err,
+            })
+          }
+        )
+      } catch (err) {
+        setState((prevState) => ({
+          ...prevState,
           isError: true,
-          isLoading: false,
-          err,
-          data: null,
-        })
-      })
+        }))
+      }
+    }
+
+    request()
   }, [gracefulRequest, typeOfRequest, prepareRequest])
 
-  return {
-    ...state,
-    isError: state.isError || gracefulError,
-  }
+  return state
 }
