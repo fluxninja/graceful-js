@@ -7,7 +7,6 @@ import {
   initialProps,
 } from './graceful-context'
 import { AxiosInstance } from 'axios'
-import { ErrorComponentProvider } from '../error-components'
 
 /**
  * Configuration object for the GracefulProvider component.
@@ -54,8 +53,6 @@ export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
   )
 
   return (
-    <GracefulStore.Provider value={value}>
-      <ErrorComponentProvider>{children}</ErrorComponentProvider>
-    </GracefulStore.Provider>
+    <GracefulStore.Provider value={value}>{children}</GracefulStore.Provider>
   )
 }

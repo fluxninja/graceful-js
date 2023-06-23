@@ -1,6 +1,3 @@
-import { defer, lastValueFrom } from 'rxjs'
-import { concatMap, retryWhen } from 'rxjs/operators'
-
 import { GraphQLClient, RequestDocument, Variables } from 'graphql-request'
 import { VariablesAndRequestHeadersArgs } from 'graphql-request/build/esm/types'
 import type { TypedDocumentNode } from '@graphql-typed-document-node/core'
@@ -67,13 +64,13 @@ export const getGracefulProps = async (params: GetGracefulPropsParams) => {
  * Makes a graceful request using either Axios or Fetch.
  *
  * @param {'Axios' | 'Fetch'} typeOfRequest - The type of request to make.
- * @param {() => Promise<AxiosOrFetch<T>>} promiseFactory - A function that returns a promise that resolves to the response object.
+ * @param {() => Promise<AxiosOrFetch<T>>} requestFnc - A function that returns a promise that resolves to the response object.
  * @param {(err: AxiosOrFetch<T> | null, response: AxiosOrFetch<T> | null) => void} [callback=() => {}] - An optional callback function that is called with the error and response objects.
  * @returns {Promise<AxiosOrFetch<T>>} - A promise that resolves to the response object.
  */
 export async function gracefulRequest<T extends 'Axios' | 'Fetch', TData = any>(
   typeOfRequest: T,
-  promiseFactory: () => Promise<AxiosOrFetch<T>>,
+  requestFnc: () => Promise<AxiosOrFetch<T>>,
   callback: (
     err: AxiosOrFetchError<T, TData> | null,
     response: AxiosOrFetch<T, TData> | null,
@@ -132,7 +129,7 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch', TData = any>(
     if (retryAttempts < retryLimit) {
       return await gracefulRequest(
         typeOfRequest,
-        promiseFactory,
+        requestFnc,
         callback,
         retryAttempts + 1
       )
@@ -148,7 +145,7 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch', TData = any>(
         isLoading: true,
       })
     }
-    const response = await promiseFactory()
+    const response = await requestFnc()
     if ('ok' in response && !response.ok) {
       throw response
     }

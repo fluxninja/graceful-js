@@ -2,7 +2,7 @@ import { FC } from 'react'
 import { DefaultErrorStyled } from './styled'
 import { Paper, Typography } from '@mui/material'
 import { ErrorIcon } from '../error-icon'
-import { useGraceful, useGracefulTheme } from '../../hooks'
+import { useGracefulTheme } from '../../hooks'
 import { DefaultText } from '../types'
 
 export type DefaultErrorText = 'message'

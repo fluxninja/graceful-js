@@ -1,13 +1,20 @@
 import React, { FC } from 'react'
-import { useMostRecentError } from './decider'
 import { DefaultError } from './default-error'
+import { ErrorInfoKey } from '../provider'
+import { useGraceful } from '../hooks'
 
-export interface GracefulErrorProps {
-  errorComponentID: string
-}
+export interface GracefulErrorProps extends ErrorInfoKey {}
 
-export const GracefulError: FC<GracefulErrorProps> = ({ errorComponentID }) => {
-  const errToRender = useMostRecentError(errorComponentID)
+export const GracefulError: FC<GracefulErrorProps> = ({ url, requestBody }) => {
+  const { errorInfo, DefaultErrorComponent } = useGraceful()
 
-  return errToRender.get(errorComponentID)?.component || <DefaultError />
+  return (
+    errorInfo.get(
+      JSON.stringify({
+        url,
+        requestBody,
+      })
+    )?.errorComponent ||
+    DefaultErrorComponent || <DefaultError />
+  )
 }

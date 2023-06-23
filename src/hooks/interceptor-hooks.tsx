@@ -1,10 +1,18 @@
 import {
   Config,
+  ErrorInfoValue,
   GracefulContext,
+  GracefulContextProps,
   GracefulProps,
   initialContextProps,
 } from '../provider'
-import { Dispatch, SetStateAction, useEffect, useState } from 'react'
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react'
 
 import {
   createGracefulPropsWithAxios,
@@ -12,6 +20,7 @@ import {
 } from '../scenarios'
 import { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
 import { cloneDeep, isEqual } from 'lodash'
+import { SelectErrorComponentWithStatusCode } from '../error-components/decider'
 
 const { fetch: windowFetch } = window
 
@@ -47,10 +56,49 @@ export const useInterceptors = (
     }
   }, [urlList, axios, a, f])
 
+  const errorInfoKey = useCallback(
+    (ctx: GracefulContextProps) => ({
+      url: ctx.url,
+      requestBody:
+        ctx.typeOfRequest === 'AXIOS'
+          ? ctx.requestBody.data
+          : ctx.requestBody.body,
+    }),
+    []
+  )
+
+  const createErrorInfo = useCallback(
+    (prevProps: GracefulProps, currentCtx: GracefulContextProps) => {
+      const { isError, status } = currentCtx
+      if (!isError) {
+        return prevProps.errorInfo
+      }
+      const key = errorInfoKey(currentCtx)
+
+      const errorInfoValue: ErrorInfoValue = {
+        ...ctx.ctx,
+        errorComponent: (
+          <SelectErrorComponentWithStatusCode
+            {...{
+              errorComponentKey: JSON.stringify(key),
+              status,
+              userComponentMap: prevProps?.errorComponentMap,
+              DefaultErrorComponent: prevProps?.DefaultErrorComponent,
+            }}
+          />
+        ),
+      }
+
+      return prevProps.errorInfo.set(JSON.stringify(key), errorInfoValue)
+    },
+    [errorInfoKey]
+  )
+
   useEffect(() => {
     setGracefulProps((prev) => ({
       ...prev,
       ...ctx,
+      errorInfo: createErrorInfo(prev, ctx.ctx),
     }))
   }, [ctx])
 }
@@ -58,31 +106,39 @@ export const useInterceptors = (
 export declare type FetchCollector = {
   setGracefulContext: Dispatch<SetStateAction<GracefulContext>>
   urlList: string[]
-  options: RequestInit | undefined
   res: Response
+  options?: RequestInit
 }
 
 export const applyFetchCollector = async ({
   setGracefulContext,
   urlList,
-  options,
   res,
+  options,
 }: FetchCollector) => {
   if (urlList.length && !urlList.includes(res.url)) {
     return res
   }
-  const gracefulProps = await createGracefulPropsWithFetch(
-    res?.clone ? res.clone() : cloneDeep(res)
-  )
 
-  await new Promise((resolve) => setTimeout(resolve, 1000))
+  const clonedRes = res.clone ? res.clone() : cloneDeep(res)
+
+  if (!clonedRes) {
+    setGracefulContext({
+      ctx: {
+        ...initialContextProps.ctx,
+        isError: true,
+        requestBody: options,
+      },
+    })
+
+    return res
+  }
+
+  const ctx = await createGracefulPropsWithFetch(clonedRes, options)
 
   setGracefulContext(
     setStateInInterceptor({
-      ctx: {
-        ...gracefulProps,
-        method: options?.method || '',
-      },
+      ctx,
     })
   )
 
@@ -131,6 +187,7 @@ export const axiosErrorCollector = (
             method: (error?.config && error.config.method) || '',
             isError: true,
             status: error.status || 404,
+            requestBody: error.config,
           },
         })
       )

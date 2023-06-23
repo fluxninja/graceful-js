@@ -1,90 +1,32 @@
-import { useEffect } from 'react'
-import { useGraceful } from '../hooks'
+import { FC } from 'react'
 import { RateLimit } from './rate-limit'
-import {
-  ErrorComponentContext,
-  useErrorComponentContext,
-} from './error-component-provider'
 import { DefaultError } from './default-error'
-import { GracefulContext } from '../provider'
 
-export const useMostRecentError = (errorComponentID: string) => {
-  const {
-    ctx,
-    DefaultErrorComponent,
-    errorComponentMap: userComponentMap,
-  } = useGraceful()
-  const { setErrorComponent, renderedErrorComponents } =
-    useErrorComponentContext()
+export const errorComponentMap = (errorKey: string): Map<number, JSX.Element> =>
+  new Map([
+    [429, <RateLimit errorComponentKey={errorKey} />],
+    [503, <RateLimit errorComponentKey={errorKey} />],
+    [504, <RateLimit errorComponentKey={errorKey} />],
+  ])
 
-  useEffect(() => {
-    if (!ctx.isError || !ctx.url.length) {
-      return
-    }
-    setErrorComponent(
-      setNewErrorComponent(
-        ctx,
-        errorComponentID,
-        userComponentMap,
-        DefaultErrorComponent
-      )
-    )
-  }, [errorComponentID, ctx, setNewErrorComponent])
-
-  return renderedErrorComponents
+export interface SelectErrorComponentProps {
+  errorComponentKey: string
+  status: number
+  userComponentMap?: Map<number, JSX.Element>
+  DefaultErrorComponent?: JSX.Element
 }
 
-export const errorComponentMap: Map<number, JSX.Element> = new Map([
-  [429, <RateLimit />],
-  [503, <RateLimit />],
-  [504, <RateLimit />],
-])
-
-function setNewErrorComponent(
-  currentCtx: GracefulContext['ctx'],
-  errorComponentID: string,
-  userComponentMap?: Map<number, JSX.Element>,
-  DefaultErrorComponent?: JSX.Element
-) {
-  return (prev: Omit<ErrorComponentContext, 'setErrorComponent'>) => {
-    const { renderedErrorComponents } = prev
-    if (
-      renderedErrorComponents.has(errorComponentID) &&
-      renderedErrorComponents.get(errorComponentID)?.errorInfo?.url ===
-        currentCtx.url &&
-      renderedErrorComponents.get(errorComponentID)?.errorInfo?.status ===
-        currentCtx.status
-    ) {
-      return prev
-    }
-
-    if (
-      renderedErrorComponents.has(errorComponentID) &&
-      renderedErrorComponents.get(errorComponentID)?.errorInfo?.url !==
-        currentCtx.url
-    ) {
-      return prev
-    }
-
-    renderedErrorComponents.forEach((value, key) => {
-      if (
-        value?.errorInfo?.url === currentCtx.url &&
-        value.errorInfo.status === currentCtx.status
-      ) {
-        renderedErrorComponents.delete(key)
-      }
-    })
-
-    renderedErrorComponents.set(errorComponentID, {
-      errorInfo: currentCtx,
-      component: (userComponentMap &&
-        userComponentMap.get(currentCtx.status)) ||
-        errorComponentMap.get(currentCtx.status) ||
-        DefaultErrorComponent || <DefaultError />,
-    })
-
-    return {
-      renderedErrorComponents,
-    }
-  }
+export const SelectErrorComponentWithStatusCode: FC<
+  SelectErrorComponentProps
+> = ({
+  status,
+  userComponentMap,
+  DefaultErrorComponent,
+  errorComponentKey,
+}) => {
+  return (
+    (userComponentMap && userComponentMap.get(status)) ||
+    errorComponentMap(errorComponentKey).get(status) ||
+    DefaultErrorComponent || <DefaultError />
+  )
 }

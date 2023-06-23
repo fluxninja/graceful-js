@@ -24,12 +24,14 @@ export const defaultRateLimitInitialText: DefaultText<RateLimitInitialText> = {
 }
 
 export interface RateLimitProps {
+  errorComponentKey: string
   text?: {
     initial: DefaultText<RateLimitInitialText>
   }
 }
 
 export const RateLimit: FC<RateLimitProps> = ({
+  errorComponentKey,
   text = {
     initial: defaultRateLimitInitialText,
   },
@@ -41,16 +43,21 @@ export const RateLimit: FC<RateLimitProps> = ({
         boxShadow: `0px 4px 4px rgba(0, 0, 0, 0.25)`,
       }}
     >
-      <RateLimitInitial text={text.initial} />
+      <RateLimitInitial
+        errorComponentKey={errorComponentKey}
+        text={text.initial}
+      />
     </RateLimitWrapper>
   )
 }
 
 export interface RateLimitInitialProps {
+  errorComponentKey: string
   text?: DefaultText<RateLimitInitialText>
 }
 
 export const RateLimitInitial: FC<RateLimitInitialProps> = ({
+  errorComponentKey,
   text = defaultRateLimitInitialText,
 }) => {
   const theme = useGracefulTheme()
@@ -61,9 +68,9 @@ export const RateLimitInitial: FC<RateLimitInitialProps> = ({
     },
   }
 
-  const {
-    ctx: { headers, responseBody },
-  } = useGraceful()
+  const { errorInfo } = useGraceful()
+
+  const { responseBody, headers = {} } = errorInfo.get(errorComponentKey) || {}
 
   const { resetTime, deltaSeconds } = getResetTime(responseBody, headers)
 

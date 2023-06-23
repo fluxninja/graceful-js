@@ -3,11 +3,12 @@ import { GracefulContextProps } from '../provider'
 import { AxiosResponse } from 'axios'
 
 export declare type CreateGracefulPropsWithFetch = (
-  clonedRes: Response
-) => Promise<Omit<GracefulContextProps, 'method'>>
+  clonedRes: Response,
+  options?: RequestInit
+) => Promise<GracefulContextProps>
 
 export const createGracefulPropsWithFetch: CreateGracefulPropsWithFetch =
-  async (clonedRes) => {
+  async (clonedRes, options) => {
     let recordHeaders = {}
     clonedRes.headers.forEach((value, key) => {
       recordHeaders = {
@@ -22,6 +23,8 @@ export const createGracefulPropsWithFetch: CreateGracefulPropsWithFetch =
       headers: recordHeaders,
       responseBody: await clonedRes.json(),
       typeOfRequest: 'FETCH',
+      requestBody: options,
+      method: options?.method || '',
     }
   }
 
@@ -40,29 +43,39 @@ export const createGracefulPropsWithAxios: CreateGracefulPropsWithAxios = (
     {}
   )
 
-  const createUrl = () => {
-    const baseUrl = res?.config.baseURL?.trim()
-    const url = res?.config.url?.trim() || ''
-    if (!baseUrl?.length) {
-      return ''
-    }
-
-    const base = baseUrl[baseUrl.length - 1].includes('/')
-      ? baseUrl.substring(0, baseUrl.length - 1)
-      : baseUrl //remove trailing slash
-    const path = !url[0].includes('/') ? `/${url}` : url // add slash in starting
-    return [base, path].join('')
-  }
-
   return {
     headers: lowerCaseHeaders,
     status: res.status,
-    url: createUrl(),
+    url: axiosCompeteURL(res),
     isError: res.status < 200 || res.status >= 400,
     responseBody: res.data,
     typeOfRequest: 'AXIOS',
     method: res.config.method || '',
+    requestBody: res.config,
   }
+}
+
+export const isValidUrl = (urlString: string) => {
+  try {
+    return Boolean(new URL(urlString))
+  } catch (e) {
+    return false
+  }
+}
+
+export const axiosCompeteURL = (res: AxiosResponse) => {
+  const baseUrl = res?.config.baseURL?.trim()
+  const url = res?.config.url?.trim() || ''
+  if (!baseUrl?.length || isValidUrl(url)) {
+    return url
+  }
+
+  const base = baseUrl[baseUrl.length - 1].includes('/')
+    ? baseUrl.substring(0, baseUrl.length - 1)
+    : baseUrl //remove trailing slash
+  const path = !url[0].includes('/') ? `/${url}` : url // add slash in starting
+
+  return [base, path].join('')
 }
 
 export const getResetTime = (

@@ -1,10 +1,8 @@
-import React, { CSSProperties, FC, useEffect } from 'react'
+import React, { CSSProperties, FC } from 'react'
 import {
   GracefulProvider,
   useGracefulRequest,
   GracefulError,
-  gracefulRequest,
-  useGraceful,
 } from '@fluxninja-tools/graceful-js'
 import { Box } from '@mui/material'
 import axios from 'axios'
@@ -28,14 +26,32 @@ export const App: FC = () => {
 export const TestComponent: FC = () => {
   const { isError } = useGracefulRequest<'Axios'>({
     typeOfRequest: 'Axios',
-    url: '/api/rate-limit',
-    method: 'GET',
+    requestFnc: () => api.get('api/rate-limit'),
+  })
+  const { isError: pingError } = useGracefulRequest<'Axios'>({
+    typeOfRequest: 'Axios',
+    requestFnc: () => api.get('api/ping'),
   })
 
   return (
     <>
       <Box sx={containerCSS}>
-        {isError && <GracefulError errorComponentID="rate-limit-error" />}
+        {isError && (
+          <GracefulError
+            {...{
+              url: 'http://localhost:3009/api/rate-limit',
+            }}
+          />
+        )}
+      </Box>
+      <Box sx={containerCSS}>
+        {pingError && (
+          <GracefulError
+            {...{
+              url: 'http://localhost:3009/api/ping',
+            }}
+          />
+        )}
       </Box>
     </>
   )

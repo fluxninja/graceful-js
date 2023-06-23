@@ -1,8 +1,11 @@
 import { useTheme } from '@mui/material'
 import { GracefulStore, GracefulTheme } from '../provider'
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { AxiosOrFetchError, gracefulRequest } from '../graceful-request'
-import { AxiosRequestConfig } from 'axios'
+import { useCallback, useContext, useEffect, useState } from 'react'
+import {
+  AxiosOrFetch,
+  AxiosOrFetchError,
+  gracefulRequest,
+} from '../graceful-request'
 
 export const useGraceful = () => useContext(GracefulStore)
 
@@ -18,10 +21,10 @@ export const useGracefulTheme = () => {
   return gracefulTheme
 }
 
-export declare type UseGracefulRequestProps<T extends 'Axios' | 'Fetch'> =
-  T extends 'Axios'
-    ? AxiosRequestConfig & { url: string; typeOfRequest: T }
-    : RequestInit & { url: string; typeOfRequest: T }
+export declare type UseGracefulRequestProps<T extends 'Axios' | 'Fetch'> = {
+  typeOfRequest: T
+  requestFnc: () => Promise<AxiosOrFetch<T>>
+}
 
 export declare type UseGracefulRequestReturn<
   T extends 'Axios' | 'Fetch',
@@ -37,8 +40,7 @@ export declare type UseGracefulRequestReturn<
 export const useGracefulRequest = <T extends 'Axios' | 'Fetch', TData = any>(
   request: UseGracefulRequestProps<T>
 ) => {
-  const { typeOfRequest } = request
-  const { axios: userApi } = useGraceful()
+  const { typeOfRequest, requestFnc } = request
 
   const [state, setState] = useState<
     UseGracefulRequestReturn<typeof typeOfRequest>
@@ -50,53 +52,32 @@ export const useGracefulRequest = <T extends 'Axios' | 'Fetch', TData = any>(
     err: null,
   })
 
-  const prepareRequest = useCallback(async () => {
-    switch (typeOfRequest) {
-      case 'Axios':
-        if (!userApi) {
-          setState((prevState) => ({
-            ...prevState,
-            isError: true,
-            err: null,
-          }))
-          throw new Error('Missing axios instance')
+  const callGracefulRequest = useCallback(async () => {
+    try {
+      await gracefulRequest<typeof typeOfRequest, TData>(
+        typeOfRequest,
+        () => requestFnc(),
+        (err, res, { isLoading, isRetry } = {}) => {
+          setState({
+            isLoading: !!isLoading,
+            isRetry: !!isRetry,
+            isError: !!err,
+            data: res,
+            err,
+          })
         }
-        return userApi<TData>({
-          ...request,
-        })
-      case 'Fetch':
-        return fetch(request.url, request)
-      default:
-        throw new Error('Invalid typeOfRequest parameter')
+      )
+    } catch (err) {
+      setState((prevState) => ({
+        ...prevState,
+        isError: true,
+      }))
     }
-  }, [typeOfRequest, userApi])
+  }, [typeOfRequest, setState])
 
   useEffect(() => {
-    const request = async () => {
-      try {
-        await gracefulRequest<typeof typeOfRequest, TData>(
-          typeOfRequest,
-          () => prepareRequest(),
-          (err, res, { isLoading, isRetry } = {}) => {
-            setState({
-              isLoading: !!isLoading,
-              isRetry: !!isRetry,
-              isError: !!err,
-              data: res,
-              err,
-            })
-          }
-        )
-      } catch (err) {
-        setState((prevState) => ({
-          ...prevState,
-          isError: true,
-        }))
-      }
-    }
-
-    request()
-  }, [gracefulRequest, typeOfRequest, prepareRequest])
+    callGracefulRequest()
+  }, [typeOfRequest])
 
   return state
 }
