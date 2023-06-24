@@ -1,9 +1,8 @@
 import React, { FC } from 'react'
 import {
   GracefulProvider,
-  useGracefulRequest,
   GracefulError,
-  UseGracefulRequestProps,
+  useGracefulRequest,
 } from '@fluxninja-tools/graceful-js'
 import { Box, Button, styled } from '@mui/material'
 import axios from 'axios'
@@ -17,6 +16,7 @@ export const App: FC = () => {
     <GracefulProvider
       config={{
         axios: api,
+        maxBackOffTime: 20,
       }}
     >
       <TestComponent />

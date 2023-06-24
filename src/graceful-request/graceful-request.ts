@@ -6,6 +6,7 @@ import {
   checkHeaderAndBody,
   createGracefulPropsWithAxios,
   createGracefulPropsWithFetch,
+  exponentialBackOff,
 } from '../scenarios'
 import { AxiosError, AxiosResponse } from 'axios'
 
@@ -96,18 +97,29 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch', TData = any>(
       throw err
     }
 
-    const { headers, responseBody: data } = await getGracefulProps({
+    const {
+      headers,
+      responseBody: data,
+      status,
+    } = await getGracefulProps({
       typeOfRequest,
       response: sendableRes,
     })
 
     const {
-      retryAfter = 0,
+      retryAfter: serverRetryAfter = 0,
       retryLimit = 0,
       rateLimitRemaining = 0,
       resetAfter = { deltaSeconds: 0 },
       check,
     } = checkHeaderAndBody(data, headers) || {}
+
+    const { retryAfter = serverRetryAfter } = exponentialBackOff(
+      status,
+      check,
+      retryAttempts
+    )
+
     const rateLimitInfo: RateLimitInfo = {
       retryAfter,
       retryLimit,
@@ -115,11 +127,11 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch', TData = any>(
       resetAfter,
     }
 
-    if (!check) {
+    if (retryAfter === 0) {
       throw err
     }
 
-    await new Promise((resolve) => setTimeout(resolve, ~~retryAfter * 1000))
+    await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000))
 
     callback({ ...err, rateLimitInfo }, null, {
       isRetry: findIsRetry(),

@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "npm run format && rm -rf dist && tsc",
-    "format": "prettier --write ./**/*.{ts,tsx,js,jsx,json,md}",
+    "format": "prettier --write ./**/*.{ts,tsx,js,json,md}",
     "lint": "eslint --ext .ts,.tsx ./src",
     "test": "jest --config jestconfig.json",
     "local:publish": "npx local-package-publisher -p"

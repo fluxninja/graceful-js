@@ -1,5 +1,11 @@
 import { useInterceptors } from '../hooks'
-import React, { FC, PropsWithChildren, useMemo, useState } from 'react'
+import React, {
+  FC,
+  PropsWithChildren,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import {
   GracefulProps,
   GracefulStore,
@@ -22,11 +28,14 @@ export declare type Config = {
   theme?: GracefulTheme
   errorComponentMap?: Map<number, JSX.Element>
   DefaultErrorComponent?: JSX.Element
+  maxBackOffTime?: number
 }
 
 export interface GracefulProviderProps {
   config?: Config
 }
+
+export let maxBackOffTime = 32
 
 export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
   children,
@@ -35,6 +44,10 @@ export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
   const [props, setGraceful] = useState<GracefulProps>(initialProps)
 
   useInterceptors(setGraceful, config)
+
+  useEffect(() => {
+    maxBackOffTime = config?.maxBackOffTime || 32
+  }, [config?.maxBackOffTime])
 
   const value: GracefulProps = useMemo(
     () => ({
