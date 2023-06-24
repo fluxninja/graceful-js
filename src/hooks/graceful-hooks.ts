@@ -24,6 +24,9 @@ export const useGracefulTheme = () => {
 export declare type UseGracefulRequestProps<T extends 'Axios' | 'Fetch'> = {
   typeOfRequest: T
   requestFnc: () => Promise<AxiosOrFetch<T>>
+  options?: {
+    disabled?: boolean
+  }
 }
 
 export declare type UseGracefulRequestReturn<
@@ -34,22 +37,37 @@ export declare type UseGracefulRequestReturn<
   isLoading: boolean
   isRetry: boolean
   data: TData | null
-  err: AxiosOrFetchError<T, TData> | null
+  error: AxiosOrFetchError<T, TData> | null
+  refetch: () => void
 }
 
-export const useGracefulRequest = <T extends 'Axios' | 'Fetch', TData = any>(
+export declare type UseGracefulRequest = <
+  T extends 'Axios' | 'Fetch',
+  TData = any
+>(
+  request: UseGracefulRequestProps<T>
+) => UseGracefulRequestReturn<T, TData>
+
+export const useGracefulRequest: UseGracefulRequest = <
+  T extends 'Axios' | 'Fetch',
+  TData = any
+>(
   request: UseGracefulRequestProps<T>
 ) => {
-  const { typeOfRequest, requestFnc } = request
+  const {
+    typeOfRequest,
+    requestFnc,
+    options: { disabled = false } = {},
+  } = request
 
   const [state, setState] = useState<
-    UseGracefulRequestReturn<typeof typeOfRequest>
+    Omit<UseGracefulRequestReturn<typeof typeOfRequest>, 'refetch'>
   >({
     isError: false,
     isLoading: false,
     isRetry: false,
     data: null,
-    err: null,
+    error: null,
   })
 
   const callGracefulRequest = useCallback(async () => {
@@ -57,27 +75,34 @@ export const useGracefulRequest = <T extends 'Axios' | 'Fetch', TData = any>(
       await gracefulRequest<typeof typeOfRequest, TData>(
         typeOfRequest,
         () => requestFnc(),
-        (err, res, { isLoading, isRetry } = {}) => {
+        (error, res, { isLoading, isRetry } = {}) => {
           setState({
             isLoading: !!isLoading,
             isRetry: !!isRetry,
-            isError: !!err,
+            isError: !!error,
             data: res,
-            err,
+            error,
           })
         }
       )
-    } catch (err) {
+    } catch (error) {
       setState((prevState) => ({
         ...prevState,
         isError: true,
+        error: error as AxiosOrFetchError<typeof typeOfRequest, TData>,
       }))
     }
   }, [typeOfRequest, setState])
 
   useEffect(() => {
+    if (disabled) {
+      return
+    }
     callGracefulRequest()
-  }, [typeOfRequest])
+  }, [disabled])
 
-  return state
+  return {
+    ...state,
+    refetch: () => callGracefulRequest(),
+  }
 }

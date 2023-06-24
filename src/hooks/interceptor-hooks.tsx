@@ -80,7 +80,7 @@ export const useInterceptors = (
         errorComponent: (
           <SelectErrorComponentWithStatusCode
             {...{
-              errorComponentKey: JSON.stringify(key),
+              errorProps: currentCtx,
               status,
               userComponentMap: prevProps?.errorComponentMap,
               DefaultErrorComponent: prevProps?.DefaultErrorComponent,

@@ -1,10 +1,11 @@
-import React, { CSSProperties, FC } from 'react'
+import React, { FC } from 'react'
 import {
   GracefulProvider,
   useGracefulRequest,
   GracefulError,
+  UseGracefulRequestProps,
 } from '@fluxninja-tools/graceful-js'
-import { Box } from '@mui/material'
+import { Box, Button, styled } from '@mui/material'
 import axios from 'axios'
 
 const api = axios.create({
@@ -24,7 +25,7 @@ export const App: FC = () => {
 }
 
 export const TestComponent: FC = () => {
-  const { isError } = useGracefulRequest<'Axios'>({
+  const { isError, refetch } = useGracefulRequest<'Axios'>({
     typeOfRequest: 'Axios',
     requestFnc: () => api.get('api/rate-limit'),
   })
@@ -35,16 +36,23 @@ export const TestComponent: FC = () => {
 
   return (
     <>
-      <Box sx={containerCSS}>
-        {isError && (
-          <GracefulError
-            {...{
-              url: 'http://localhost:3009/api/rate-limit',
-            }}
-          />
-        )}
-      </Box>
-      <Box sx={containerCSS}>
+      <GridBox>
+        <ColumnBox>
+          <Button variant="contained" color="primary" onClick={() => refetch()}>
+            Fetch Rate Limit
+          </Button>
+        </ColumnBox>
+        <ColumnBox>
+          {isError && (
+            <GracefulError
+              {...{
+                url: 'http://localhost:3009/api/rate-limit',
+              }}
+            />
+          )}
+        </ColumnBox>
+      </GridBox>
+      <ColumnBox>
         {pingError && (
           <GracefulError
             {...{
@@ -52,15 +60,29 @@ export const TestComponent: FC = () => {
             }}
           />
         )}
-      </Box>
+      </ColumnBox>
     </>
   )
 }
 
-const containerCSS: CSSProperties = {
+const ColumnBox = styled(Box)({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
   height: 500,
-}
+})
+
+const GridBox = styled(Box)(({ theme }) => ({
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gridGap: theme.spacing(2),
+  width: '100%',
+  [theme.breakpoints.down('sm')]: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100%',
+  },
+}))

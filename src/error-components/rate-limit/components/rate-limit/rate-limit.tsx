@@ -2,10 +2,11 @@ import React from 'react'
 import { FC } from 'react'
 import { RateLimitGrid, RateLimitWrapper } from './styled'
 import { ErrorIcon } from '../../../error-icon'
-import { useGraceful, useGracefulTheme } from '../../../../hooks'
+import { useGracefulTheme } from '../../../../hooks'
 import { Paper, Typography, TypographyProps } from '@mui/material'
 import { DefaultText } from '../../../types'
 import { getResetTime } from '../../../../scenarios'
+import { GracefulContextProps } from '../../../../provider'
 
 type RateLimitInitialText =
   | 'sorry'
@@ -23,18 +24,17 @@ export const defaultRateLimitInitialText: DefaultText<RateLimitInitialText> = {
   button: `Read more`,
 }
 
-export interface RateLimitProps {
-  errorComponentKey: string
+export interface RateLimitProps extends GracefulContextProps {
   text?: {
     initial: DefaultText<RateLimitInitialText>
   }
 }
 
 export const RateLimit: FC<RateLimitProps> = ({
-  errorComponentKey,
   text = {
     initial: defaultRateLimitInitialText,
   },
+  ...props
 }) => {
   return (
     <RateLimitWrapper
@@ -44,21 +44,22 @@ export const RateLimit: FC<RateLimitProps> = ({
       }}
     >
       <RateLimitInitial
-        errorComponentKey={errorComponentKey}
-        text={text.initial}
+        {...{
+          text: text.initial,
+          ...props,
+        }}
       />
     </RateLimitWrapper>
   )
 }
 
-export interface RateLimitInitialProps {
-  errorComponentKey: string
+export interface RateLimitInitialProps extends GracefulContextProps {
   text?: DefaultText<RateLimitInitialText>
 }
 
 export const RateLimitInitial: FC<RateLimitInitialProps> = ({
-  errorComponentKey,
   text = defaultRateLimitInitialText,
+  ...props
 }) => {
   const theme = useGracefulTheme()
 
@@ -68,9 +69,7 @@ export const RateLimitInitial: FC<RateLimitInitialProps> = ({
     },
   }
 
-  const { errorInfo } = useGraceful()
-
-  const { responseBody, headers = {} } = errorInfo.get(errorComponentKey) || {}
+  const { responseBody, headers = {} } = props || {}
 
   const { resetTime, deltaSeconds } = getResetTime(responseBody, headers)
 
