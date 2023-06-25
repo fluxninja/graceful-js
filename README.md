@@ -56,7 +56,7 @@ import { gracefulRequest } from 'graceful-js';
 
 // gracefulRequest with Axios
    gracefulRequest<'Axios'>('Axios',
-     () => api.get(/api), 
+     () => api.get(/api),
      (err, success) => {
        if(err){
        	// action on error
@@ -103,9 +103,9 @@ const [err, setErr] = React.useState(false)
    return (
 	<>
 	  {
-	   err ? <GracefulError 
-		   url="https://website.com/api/endpoint" 
-		   requestBody={{ userID: "foo" }} 
+	   err ? <GracefulError
+		   url="https://website.com/api/endpoint"
+		   requestBody={{ userID: "foo" }}
 		  />:(
 		// code to render if no error
 		<h1>Api call is successful</h1>
@@ -151,12 +151,12 @@ export const useCharacterQuery = () => {
 }
 
 // use graceful error like so:
-<GracefulError 
- url={`${API_SERVICE_URL}/graphql`}
- requestBody={{
-   query: queryHello,
-   variables: {} // if there are any variables
- }}
+;<GracefulError
+  url={`${API_SERVICE_URL}/graphql`}
+  requestBody={{
+    query: queryHello,
+    variables: {}, // if there are any variables
+  }}
 />
 ```
 
@@ -164,7 +164,7 @@ To implement graphql with any other graphql client, just add an extra `gracefulR
 
 ## Hooks
 
-You can also use `useGracefulRequest` hook. Here is the code snippet. 
+You can also use `useGracefulRequest` hook. Here is the code snippet.
 
 ```javascript
   const { isError, refetch, data, isLoading, isRetry, error } = useGracefulRequest<'Axios'>({
