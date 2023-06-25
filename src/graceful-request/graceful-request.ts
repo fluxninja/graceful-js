@@ -1,6 +1,3 @@
-import { defer, from, lastValueFrom, tap, throwError, timer } from 'rxjs'
-import { catchError, concatMap, retryWhen } from 'rxjs/operators'
-
 import { GraphQLClient, RequestDocument, Variables } from 'graphql-request'
 import { VariablesAndRequestHeadersArgs } from 'graphql-request/build/esm/types'
 import type { TypedDocumentNode } from '@graphql-typed-document-node/core'
@@ -9,6 +6,7 @@ import {
   checkHeaderAndBody,
   createGracefulPropsWithAxios,
   createGracefulPropsWithFetch,
+  exponentialBackOff,
 } from '../scenarios'
 import { AxiosError, AxiosResponse } from 'axios'
 
@@ -22,13 +20,25 @@ export declare type RateLimitInfo = {
   }
 }
 
-export type AxiosOrFetch<T extends 'Axios' | 'Fetch'> = T extends 'Axios'
-  ? AxiosResponse & { rateLimitInfo?: RateLimitInfo }
-  : Response & { rateLimitInfo?: RateLimitInfo }
+export type AxiosOrFetch<
+  T extends 'Axios' | 'Fetch',
+  TData = any
+> = T extends 'Axios'
+  ? AxiosResponse<TData> & { rateLimitInfo?: RateLimitInfo }
+  : Omit<Response, 'json'> & {
+      rateLimitInfo?: RateLimitInfo
+      json: () => Promise<TData>
+    }
 
-export type AxiosOrFetchError<T extends 'Axios' | 'Fetch'> = T extends 'Axios'
-  ? AxiosError & { rateLimitInfo?: RateLimitInfo }
-  : Response & { rateLimitInfo?: RateLimitInfo }
+export type AxiosOrFetchError<
+  T extends 'Axios' | 'Fetch',
+  TData = any
+> = T extends 'Axios'
+  ? AxiosError<TData> & { rateLimitInfo?: RateLimitInfo }
+  : Omit<Response, 'json'> & {
+      rateLimitInfo?: RateLimitInfo
+      json: () => Promise<TData>
+    }
 
 export declare type GetGracefulPropsParams =
   | {
@@ -55,72 +65,114 @@ export const getGracefulProps = async (params: GetGracefulPropsParams) => {
  * Makes a graceful request using either Axios or Fetch.
  *
  * @param {'Axios' | 'Fetch'} typeOfRequest - The type of request to make.
- * @param {() => Promise<AxiosOrFetch<T>>} promiseFactory - A function that returns a promise that resolves to the response object.
+ * @param {() => Promise<AxiosOrFetch<T>>} requestFnc - A function that returns a promise that resolves to the response object.
  * @param {(err: AxiosOrFetch<T> | null, response: AxiosOrFetch<T> | null) => void} [callback=() => {}] - An optional callback function that is called with the error and response objects.
  * @returns {Promise<AxiosOrFetch<T>>} - A promise that resolves to the response object.
  */
-export async function gracefulRequest<T extends 'Axios' | 'Fetch'>(
+export async function gracefulRequest<T extends 'Axios' | 'Fetch', TData = any>(
   typeOfRequest: T,
-  promiseFactory: () => Promise<AxiosOrFetch<T>>,
+  requestFnc: () => Promise<AxiosOrFetch<T>>,
   callback: (
-    err: AxiosOrFetchError<T> | null,
-    response: AxiosOrFetch<T> | null
-  ) => void = () => {}
-): Promise<AxiosOrFetch<T>> {
-  let err: any = null
-  let responsePromise: AxiosOrFetch<T> | null = null
-  try {
-    responsePromise = await promiseFactory()
-  } catch (error) {
-    err = error
-  }
-  if (!err && responsePromise) {
-    callback(null, responsePromise)
-    return responsePromise
-  }
-  const sendableRes =
-    typeOfRequest === 'Axios' ? err?.response : err?.clone ? err.clone() : null
-  callback(err, null)
-  if (!sendableRes) {
-    return err
-  }
-  const { headers, responseBody: data } =
-    (await getGracefulProps({
+    err: AxiosOrFetchError<T, TData> | null,
+    response: AxiosOrFetch<T, TData> | null,
+    info?: {
+      isRetry?: boolean
+      isLoading?: boolean
+    }
+  ) => void = () => {},
+  retryAttempts = 0
+): Promise<AxiosOrFetch<T, TData>> {
+  const findIsRetry = () => (retryAttempts > 0 ? true : false)
+  const retryRequest = async (err: any) => {
+    callback(err, null, {
+      isRetry: findIsRetry(),
+      isLoading: false,
+    })
+    const sendableRes = typeOfRequest === 'Axios' ? err?.response : err
+    if (!sendableRes) {
+      callback(err, null, {
+        isRetry: findIsRetry(),
+        isLoading: false,
+      })
+      throw err
+    }
+
+    const {
+      headers,
+      responseBody: data,
+      status,
+    } = await getGracefulProps({
       typeOfRequest,
       response: sendableRes,
-    })) || {}
-  const {
-    retryAfter = 0,
-    retryLimit = 0,
-    rateLimitRemaining = 0,
-    resetAfter = { deltaSeconds: 0 },
-    check,
-  } = checkHeaderAndBody(data, headers) || {}
-  const rateLimitInfo: RateLimitInfo = {
-    retryAfter,
-    retryLimit,
-    rateLimitRemaining,
-    resetAfter,
-  }
-  const requestWithRetry = check
-    ? defer(() => from(promiseFactory())).pipe(
-        catchError((error) => {
-          return throwError(error)
-        }),
-        retryWhen((errors) =>
-          errors.pipe(
-            concatMap((error, i) => {
-              return i < retryLimit
-                ? timer(~~retryAfter * 1000).pipe(
-                    tap(() => callback({ ...error, rateLimitInfo }, null))
-                  )
-                : throwError({ ...error, rateLimitInfo })
-            })
-          )
-        )
+    })
+
+    const {
+      retryAfter: serverRetryAfter = 0,
+      retryLimit = 0,
+      rateLimitRemaining = 0,
+      resetAfter = { deltaSeconds: 0 },
+      check,
+    } = checkHeaderAndBody(data, headers) || {}
+
+    const { retryAfter: exponentialRetryAfterTime } = exponentialBackOff(
+      status,
+      check,
+      retryAttempts
+    )
+
+    const retryAfter = exponentialRetryAfterTime
+      ? exponentialRetryAfterTime
+      : serverRetryAfter
+
+    const rateLimitInfo: RateLimitInfo = {
+      retryAfter,
+      retryLimit,
+      rateLimitRemaining,
+      resetAfter,
+    }
+
+    if (!retryAfter) {
+      throw err
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000))
+
+    callback({ ...err, rateLimitInfo }, null, {
+      isRetry: findIsRetry(),
+      isLoading: false,
+    })
+
+    if (retryAttempts < retryLimit || (!check && !retryLimit)) {
+      return await gracefulRequest(
+        typeOfRequest,
+        requestFnc,
+        callback,
+        retryAttempts + 1
       )
-    : defer(() => from(promiseFactory()))
-  return lastValueFrom(requestWithRetry)
+    }
+
+    throw err
+  }
+
+  try {
+    if (!findIsRetry()) {
+      callback(null, null, {
+        isRetry: findIsRetry(),
+        isLoading: true,
+      })
+    }
+    const response = await requestFnc()
+    if ('ok' in response && !response.ok) {
+      throw response
+    }
+    callback(null, response, {
+      isRetry: findIsRetry(),
+      isLoading: false,
+    })
+    return response
+  } catch (err: any) {
+    return await retryRequest(err)
+  }
 }
 
 export const gracefulGraphQLRequest = async <
@@ -142,9 +194,6 @@ export const gracefulGraphQLRequest = async <
           query: document,
           variables: variables,
         }),
-      }).then((res) => {
-        if (!res.ok) throw res
-        return res
       })
     )
   } catch (e) {

@@ -1,11 +1,15 @@
 import { useInterceptors } from '../hooks'
-import React, { FC, PropsWithChildren, useMemo, useState } from 'react'
+import React, {
+  FC,
+  PropsWithChildren,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import {
-  GracefulContext,
   GracefulProps,
   GracefulStore,
   GracefulTheme,
-  initialContextProps,
   initialProps,
 } from './graceful-context'
 import { AxiosInstance } from 'axios'
@@ -24,24 +28,30 @@ export declare type Config = {
   theme?: GracefulTheme
   errorComponentMap?: Map<number, JSX.Element>
   DefaultErrorComponent?: JSX.Element
+  maxBackOffTime?: number
 }
 
 export interface GracefulProviderProps {
   config?: Config
 }
 
+export let maxBackOffTime = 20
+
 export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
   children,
   config,
 }) => {
-  const [context, setContext] = useState<GracefulContext>(initialContextProps)
-  const [, setGraceful] = useState<GracefulProps>(initialProps)
+  const [props, setGraceful] = useState<GracefulProps>(initialProps)
 
-  useInterceptors(setContext, config)
+  useInterceptors(setGraceful, config)
+
+  useEffect(() => {
+    maxBackOffTime = config?.maxBackOffTime || 20
+  }, [config?.maxBackOffTime])
 
   const value: GracefulProps = useMemo(
     () => ({
-      ...context,
+      ...props,
       ...(config?.theme && { theme: config.theme }),
       ...(config?.errorComponentMap && {
         errorComponentMap: config.errorComponentMap,
@@ -49,9 +59,10 @@ export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
       ...(config?.DefaultErrorComponent && {
         DefaultErrorComponent: config.DefaultErrorComponent,
       }),
+      axios: config?.axios,
       setGraceful,
     }),
-    [context]
+    [config, props]
   )
 
   return (

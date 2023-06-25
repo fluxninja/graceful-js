@@ -5,8 +5,8 @@ import { ErrorIcon } from '../../../error-icon'
 import { useGracefulTheme } from '../../../../hooks'
 import { Paper, Typography, TypographyProps } from '@mui/material'
 import { DefaultText } from '../../../types'
-import { useMostRecentError } from '../../../decider'
 import { getResetTime } from '../../../../scenarios'
+import { GracefulContextProps } from '../../../../provider'
 
 type RateLimitInitialText =
   | 'sorry'
@@ -24,7 +24,7 @@ export const defaultRateLimitInitialText: DefaultText<RateLimitInitialText> = {
   button: `Read more`,
 }
 
-export interface RateLimitProps {
+export interface RateLimitProps extends GracefulContextProps {
   text?: {
     initial: DefaultText<RateLimitInitialText>
   }
@@ -34,6 +34,7 @@ export const RateLimit: FC<RateLimitProps> = ({
   text = {
     initial: defaultRateLimitInitialText,
   },
+  ...props
 }) => {
   return (
     <RateLimitWrapper
@@ -42,17 +43,23 @@ export const RateLimit: FC<RateLimitProps> = ({
         boxShadow: `0px 4px 4px rgba(0, 0, 0, 0.25)`,
       }}
     >
-      <RateLimitInitial text={text.initial} />
+      <RateLimitInitial
+        {...{
+          text: text.initial,
+          ...props,
+        }}
+      />
     </RateLimitWrapper>
   )
 }
 
-export interface RateLimitInitialProps {
+export interface RateLimitInitialProps extends GracefulContextProps {
   text?: DefaultText<RateLimitInitialText>
 }
 
 export const RateLimitInitial: FC<RateLimitInitialProps> = ({
   text = defaultRateLimitInitialText,
+  ...props
 }) => {
   const theme = useGracefulTheme()
 
@@ -62,9 +69,7 @@ export const RateLimitInitial: FC<RateLimitInitialProps> = ({
     },
   }
 
-  const {
-    ctx: { headers, responseBody },
-  } = useMostRecentError()
+  const { responseBody, headers = {} } = props || {}
 
   const { resetTime, deltaSeconds } = getResetTime(responseBody, headers)
 

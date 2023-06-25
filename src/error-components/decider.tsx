@@ -1,39 +1,30 @@
-/**
- * This module is responsible for deciding which error component to render
- */
-
-import { useEffect, useState } from 'react'
-import { GracefulProps, initialProps } from '../provider'
-import { useGraceful } from '../hooks'
+import { FC } from 'react'
 import { RateLimit } from './rate-limit'
+import { DefaultError } from './default-error'
+import { GracefulContextProps } from '../provider'
 
-export const useMostRecentError = () => {
-  const [currentError, setCurrent] = useState<GracefulProps>(initialProps)
+export const errorComponentMap = (
+  errorProps: GracefulContextProps
+): Map<number, JSX.Element> =>
+  new Map([
+    [429, <RateLimit {...errorProps} />],
+    [503, <RateLimit {...errorProps} />],
+    [504, <RateLimit {...errorProps} />],
+  ])
 
-  const props = useGraceful()
-
-  useEffect(() => {
-    setCurrent(props)
-  }, [])
-
-  useEffect(() => {
-    const {
-      ctx: { status, url },
-    } = props
-    if (!url.length) {
-      return
-    }
-    if (url === currentError.ctx.url && status !== currentError.ctx.status) {
-      // if status is change on same endpoint, update currentError
-      setCurrent(props)
-    }
-  }, [currentError, props])
-
-  return currentError
+export interface SelectErrorComponentProps {
+  errorProps: GracefulContextProps
+  status: number
+  userComponentMap?: Map<number, JSX.Element>
+  DefaultErrorComponent?: JSX.Element
 }
 
-export const errorComponentMap: Map<number, JSX.Element> = new Map([
-  [429, <RateLimit />],
-  [503, <RateLimit />],
-  [504, <RateLimit />],
-])
+export const SelectErrorComponentWithStatusCode: FC<
+  SelectErrorComponentProps
+> = ({ status, userComponentMap, DefaultErrorComponent, errorProps }) => {
+  return (
+    (userComponentMap && userComponentMap.get(status)) ||
+    errorComponentMap(errorProps).get(status) ||
+    DefaultErrorComponent || <DefaultError />
+  )
+}

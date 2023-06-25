@@ -1,28 +1,20 @@
 import React, { FC } from 'react'
-import { errorComponentMap, useMostRecentError } from './decider'
 import { DefaultError } from './default-error'
+import { ErrorInfoKey } from '../provider'
 import { useGraceful } from '../hooks'
 
-export const GracefulError: FC = () => {
-  const {
-    ctx: { status, isError },
-  } = useMostRecentError()
+export interface GracefulErrorProps extends ErrorInfoKey {}
 
-  const {
-    errorComponentMap: userProvidedComponents,
-    DefaultErrorComponent: UserDefault,
-  } = useGraceful()
-
-  if (!status) {
-    return null
-  }
-
-  if (!isError) {
-    return null
-  }
+export const GracefulError: FC<GracefulErrorProps> = ({ url, requestBody }) => {
+  const { errorInfo, DefaultErrorComponent } = useGraceful()
 
   return (
-    (userProvidedComponents?.get(status) ?? UserDefault) ||
-    (errorComponentMap.get(status) ?? <DefaultError />)
+    errorInfo.get(
+      JSON.stringify({
+        url,
+        requestBody,
+      })
+    )?.errorComponent ||
+    DefaultErrorComponent || <DefaultError />
   )
 }
