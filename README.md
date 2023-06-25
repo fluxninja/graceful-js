@@ -1,6 +1,6 @@
 ## Graceful-js (FluxNinja UI package)
 
-Graceful-js is built on the concept of interceptors. It provides two types of interceptors: one is a fetch interceptor, and the other is an axios interceptor.
+Graceful-js is built on the concept of interceptors. It provides two types of interceptors fetch and axios.
 To use `graceful-js` with browser fetch. You just have to wrap your app with `GracefulProvider` like so:
 
 ```javascript
@@ -9,7 +9,7 @@ To use `graceful-js` with browser fetch. You just have to wrap your app with `Gr
 </GracefulProvider>
 ```
 
-The only thing a user has to do after wrapping their app with `GracefulProvider` is to use `GracefulError` component as their primary error component, and it will take care of the rest. This error component renders different components according to the status code.
+The only thing a user has to do after wrapping their app with `GracefulProvider` is to use `GracefulError` component as their primary error component, and it will take care of the rest. This error component renders different components according to the status code. You have to pass url as parameter to error component. If you are fetching same url with different body at multiple places pass request body to error component as well. This is used to uniquely identify request made by app.
 
 ## Custom Config
 
@@ -23,6 +23,7 @@ Here is how you can configure `graceful-js` according to your needs. If you are 
  * @property {GracefulTheme} theme - The theme object to use for styling the error components.
  * @property {Map<number, JSX.Element>} errorComponentMap - A map of HTTP status codes to custom error components to render for each code.
  * @property {JSX.Element} DefaultErrorComponent - The default error component to render if no custom component is provided for a given status code.
+ * @property {number} maxBackOffTime - Maximum wait time for retry. It is used in exponential back off. Default is 20 sec.
  */
 export declare type Config = {
   axios?: AxiosInstance
@@ -30,6 +31,7 @@ export declare type Config = {
   theme?: GracefulTheme
   errorComponentMap?: Map<number, JSX.Element>
   DefaultErrorComponent?: JSX.Element
+  maxBackOffTime?: number
 }
 ```
 
@@ -47,13 +49,15 @@ const App: FC = () => (
 )
 ```
 
-To get support for the rate limit headers and body use `gracefulRequest` instead of a regular fetch or axios. This function will retry according to the provided parameters. While using `gracefulRequest` function make sure you throw error in case of `fetch`. Here is how you use `gracefulRequest` with `Axios` and `fetch`.
+To get support for the rate limit headers and body use `gracefulRequest` instead of a regular fetch or axios. This function will retry according to the provided parameters. In case there is no Retry-After provided by server, library do retries in case of 429, 503 and 504 using exponential back off. Here is how you use `gracefulRequest` with `Axios` and `fetch`.
 
 ```javascript
 import { gracefulRequest } from 'graceful-js';
 
 // gracefulRequest with Axios
-   gracefulRequest('Axios', () => api.get(/api), (err, success) => {
+   gracefulRequest<'Axios'>('Axios',
+     () => api.get(/api),
+     (err, success) => {
        if(err){
        	// action on error
 	return
@@ -62,13 +66,8 @@ import { gracefulRequest } from 'graceful-js';
     })
 
 // gracefulRequest with fetch
-   gracefulRequest('Fetch',
-    () => fetch('yourEndPoint').then((res) => {
-      if(!res.ok){
-        throw res
-      }
-      return res
-    }),
+   gracefulRequest<'Fetch'>('Fetch',
+    () => fetch('yourEndPoint'),
     (err, success) => {
       if(err){
         // action on error
@@ -104,7 +103,10 @@ const [err, setErr] = React.useState(false)
    return (
 	<>
 	  {
-	   err ? <GracefulError />:(
+	   err ? <GracefulError
+		   url="https://website.com/api/endpoint"
+		   requestBody={{ userID: "foo" }}
+		  />:(
 		// code to render if no error
 		<h1>Api call is successful</h1>
 		)
@@ -115,7 +117,7 @@ const [err, setErr] = React.useState(false)
 }
 ```
 
-In the case of graphql, the library currently supports `graphql-request`. To implement `graceful-js`, after creating a graphql client, instead of using `client.request`, just use `gracefulGraphQLRequest`. Here is the code snippet:
+In the case of graphql, the library currently supports `graphql-request`. To implement `graceful-js`, after creating a graphql client, instead of using `client.request` use `gracefulGraphQLRequest`. In case of graphQL, it's mendatory to pass `requestBody` to `GracefulError` component. Pass an object of `{ query, variables }`. Here is the code snippet:
 
 ```javascript
 import { GraphQLClient, gql } from 'graphql-request'
@@ -147,9 +149,47 @@ export const useCharacterQuery = () => {
     retry: false,
   })
 }
+
+// use graceful error like so:
+;<GracefulError
+  url={`${API_SERVICE_URL}/graphql`}
+  requestBody={{
+    query: queryHello,
+    variables: {}, // if there are any variables
+  }}
+/>
 ```
 
 To implement graphql with any other graphql client, just add an extra `gracefulRequest` with fetch before calling the graphql endpoint with the package. This fetch request will get intercepted by graceful-js.
+
+## Hooks
+
+You can also use `useGracefulRequest` hook. Here is the code snippet.
+
+```javascript
+  const { isError, refetch, data, isLoading, isRetry, error } = useGracefulRequest<'Axios'>({
+    typeOfRequest: 'Axios',
+    requestFnc: () => api.get('api/rate-limit'),
+  })
+
+  // here are the hook types:
+
+export declare type UseGracefulRequestProps<T extends 'Axios' | 'Fetch'> = {
+    typeOfRequest: T;
+    requestFnc: () => Promise<AxiosOrFetch<T>>;
+    options?: {
+        disabled?: boolean;
+    };
+};
+export declare type UseGracefulRequestReturn<T extends 'Axios' | 'Fetch', TData = any> = {
+    isError: boolean;
+    isLoading: boolean;
+    isRetry: boolean;
+    data: TData | null;
+    error: AxiosOrFetchError<T, TData> | null;
+    refetch: () => void;
+};
+```
 
 ## Scenarios
 
@@ -201,4 +241,4 @@ export declare type RateLimitHeaders = {
 }
 ```
 
-**NOTE**: Retry will occur regardless of the error status code if a retry-after time is provided in headers or body. Library will also check remaining rate limit, if it is zero no retry will happen.
+**NOTE**: Retry will occur regardless of the error status code if a retry-after time is provided in headers or body.
