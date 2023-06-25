@@ -35,7 +35,7 @@ export interface GracefulProviderProps {
   config?: Config
 }
 
-export let maxBackOffTime = 32
+export let maxBackOffTime = 20
 
 export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
   children,
@@ -46,7 +46,7 @@ export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
   useInterceptors(setGraceful, config)
 
   useEffect(() => {
-    maxBackOffTime = config?.maxBackOffTime || 32
+    maxBackOffTime = config?.maxBackOffTime || 20
   }, [config?.maxBackOffTime])
 
   const value: GracefulProps = useMemo(

@@ -114,11 +114,15 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch', TData = any>(
       check,
     } = checkHeaderAndBody(data, headers) || {}
 
-    const { retryAfter = serverRetryAfter } = exponentialBackOff(
+    const { retryAfter: exponentialRetryAfterTime } = exponentialBackOff(
       status,
       check,
       retryAttempts
     )
+
+    const retryAfter = exponentialRetryAfterTime
+      ? exponentialRetryAfterTime
+      : serverRetryAfter
 
     const rateLimitInfo: RateLimitInfo = {
       retryAfter,
@@ -127,7 +131,7 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch', TData = any>(
       resetAfter,
     }
 
-    if (retryAfter === 0) {
+    if (!retryAfter) {
       throw err
     }
 
@@ -138,7 +142,7 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch', TData = any>(
       isLoading: false,
     })
 
-    if (retryAttempts < retryLimit) {
+    if (retryAttempts < retryLimit || (!check && !retryLimit)) {
       return await gracefulRequest(
         typeOfRequest,
         requestFnc,
