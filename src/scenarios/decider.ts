@@ -6,9 +6,11 @@ export const checkHeaderAndBody = (
   headers: Record<Lowercase<string>, string>
 ) => {
   const retryAfter = data?.retryAfter || parseInt(headers['retry-after'])
+  const retryLimit = data?.retryLimit || parseInt(headers['retry-limit'])
+  const madeUpRetryLimit = retryAfter && !retryLimit ? 1 : retryLimit
   return {
     retryAfter,
-    retryLimit: data?.retryLimit || parseInt(headers?.['x-ratelimit-limit']),
+    retryLimit: madeUpRetryLimit,
     rateLimitRemaining:
       data.rateLimitRemaining ||
       parseInt(headers?.['x-ratelimit-remaining']) ||
