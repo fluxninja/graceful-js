@@ -24,7 +24,7 @@ export const defaultRateLimitInitialText: DefaultText<RateLimitInitialText> = {
   button: `Read more`,
 }
 
-export interface RateLimitProps extends GracefulContextProps {
+export interface RateLimitProps extends Partial<GracefulContextProps> {
   text?: {
     initial: DefaultText<RateLimitInitialText>
   }
@@ -53,7 +53,7 @@ export const RateLimit: FC<RateLimitProps> = ({
   )
 }
 
-export interface RateLimitInitialProps extends GracefulContextProps {
+export interface RateLimitInitialProps extends Partial<GracefulContextProps> {
   text?: DefaultText<RateLimitInitialText>
 }
 

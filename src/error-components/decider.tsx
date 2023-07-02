@@ -4,7 +4,7 @@ import { DefaultError } from './default-error'
 import { GracefulContextProps } from '../provider'
 
 export const errorComponentMap = (
-  errorProps: GracefulContextProps
+  errorProps?: GracefulContextProps
 ): Map<number, JSX.Element> =>
   new Map([
     [429, <RateLimit {...errorProps} />],
@@ -13,7 +13,7 @@ export const errorComponentMap = (
   ])
 
 export interface SelectErrorComponentProps {
-  errorProps: GracefulContextProps
+  errorProps?: GracefulContextProps
   status: number
   userComponentMap?: Map<number, JSX.Element>
   DefaultErrorComponent?: JSX.Element
