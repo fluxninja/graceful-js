@@ -1,4 +1,13 @@
 ## Graceful-js (FluxNinja UI package)
+Install using `npm` or `yarn`
+
+```shell
+#npm
+npm i @fluxninja-tools/graceful-js
+#yarn
+yarn add @fluxninja-tools/graceful-js
+```
+Graceful-js is a powerful and intuitive React library designed to enhance your API communication by seamlessly handling retries based on status codes and intelligently understanding rate limiting headers and bodies. Its ability to automatically handle retries, allowing your application to gracefully recover from transient failures. Whether you're dealing with intermittent server issues or temporary network glitches, this library will make sure your API requests are retried in a controlled and efficient manner.
 
 Graceful-js is built on the concept of interceptors. It provides two types of interceptors fetch and axios.
 To use `graceful-js` with browser fetch. You just have to wrap your app with `GracefulProvider` like so:
