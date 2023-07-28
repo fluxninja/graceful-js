@@ -1,8 +1,9 @@
 import { maxBackOffTime } from '../provider'
+import { AnyObject } from '../types'
 import { getResetTime } from './utils'
 
 export const checkHeaderAndBody = (
-  data: any,
+  data: AnyObject,
   headers: Record<Lowercase<string>, string>
 ) => {
   const retryAfter = data?.retryAfter || parseInt(headers['retry-after'])

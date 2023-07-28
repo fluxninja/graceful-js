@@ -27,7 +27,10 @@ export const App: FC = () => {
 export const TestComponent: FC = () => {
   const { isError, refetch } = useGracefulRequest<'Axios'>({
     typeOfRequest: 'Axios',
-    requestFnc: () => api.get('api/rate-limit'),
+    requestFnc: () => api.get('/api/rate-limit'),
+    options: {
+      disabled: true,
+    },
   })
   const { isError: pingError } = useGracefulRequest<'Axios'>({
     typeOfRequest: 'Axios',
@@ -47,6 +50,8 @@ export const TestComponent: FC = () => {
             <GracefulError
               {...{
                 url: 'http://localhost:3009/api/rate-limit',
+                method: 'GET',
+                // requestBody: {},
               }}
             />
           )}
@@ -57,6 +62,8 @@ export const TestComponent: FC = () => {
           <GracefulError
             {...{
               url: 'http://localhost:3009/api/ping',
+              method: 'GET',
+              requestBody: '',
             }}
           />
         )}

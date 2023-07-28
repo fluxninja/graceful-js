@@ -194,3 +194,5 @@ export const ErrorIcon: FC<PropsWithRef<SvgIconProps>> = React.forwardRef(
     </SvgIcon>
   )
 )
+
+ErrorIcon.displayName = 'ErrorIcon'

@@ -1,16 +1,17 @@
 import { AxiosInstance } from 'axios'
 import { noop } from 'lodash'
 import { Dispatch, SetStateAction, createContext } from 'react'
+import { AnyObject } from '../types'
 
 export declare type GracefulContextProps = {
   headers: Record<string, string>
   url: string
   isError: boolean
   status: number
-  responseBody: any | null
+  responseBody: AnyObject | null
   typeOfRequest: 'FETCH' | 'AXIOS'
   method: string
-  requestBody: any | null
+  requestBody: AnyObject | null
   retriesLeft?: number
 }
 
@@ -22,11 +23,6 @@ export declare type GracefulTheme = {
 
 export declare type GracefulContext = {
   ctx: GracefulContextProps
-}
-
-export type ErrorInfoKey = {
-  url: string
-  requestBody?: any
 }
 
 export type ErrorInfoValue = GracefulContextProps & {

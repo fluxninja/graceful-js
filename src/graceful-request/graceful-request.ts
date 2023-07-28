@@ -1,7 +1,4 @@
-import { GraphQLClient, RequestDocument, Variables } from 'graphql-request'
-import { VariablesAndRequestHeadersArgs } from 'graphql-request/build/esm/types'
-import type { TypedDocumentNode } from '@graphql-typed-document-node/core'
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   checkHeaderAndBody,
   createGracefulPropsWithAxios,
@@ -9,6 +6,7 @@ import {
   exponentialBackOff,
 } from '../scenarios'
 import { AxiosError, AxiosResponse } from 'axios'
+import { AnyObject } from '../types'
 
 export declare type RateLimitInfo = {
   retryAfter: number
@@ -112,7 +110,7 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch', TData = any>(
       rateLimitRemaining = 0,
       resetAfter = { deltaSeconds: 0 },
       check,
-    } = checkHeaderAndBody(data, headers) || {}
+    } = checkHeaderAndBody(data as AnyObject, headers) || {}
 
     const { retryAfter: exponentialRetryAfterTime } = exponentialBackOff(
       status,
@@ -170,35 +168,7 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch', TData = any>(
       isLoading: false,
     })
     return response
-  } catch (err: any) {
+  } catch (err) {
     return await retryRequest(err)
   }
-}
-
-export const gracefulGraphQLRequest = async <
-  T,
-  V extends Variables = Variables
->(
-  graphQLUrl: string,
-  client: GraphQLClient,
-  document: RequestDocument | TypedDocumentNode,
-  ...variablesAndRequestHeaders: VariablesAndRequestHeadersArgs<V>
-): Promise<T> => {
-  const [variables, requestHeaders] = variablesAndRequestHeaders
-  try {
-    await gracefulRequest('Fetch', () =>
-      fetch(graphQLUrl, {
-        method: 'POST',
-        headers: requestHeaders as Headers,
-        body: JSON.stringify({
-          query: document,
-          variables: variables,
-        }),
-      })
-    )
-  } catch (e) {
-    throw e
-  }
-
-  return client.request<T, V>(document, ...variablesAndRequestHeaders)
 }

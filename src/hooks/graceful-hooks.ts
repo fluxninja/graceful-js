@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useTheme } from '@mui/material'
 import { GracefulStore, GracefulTheme } from '../provider'
 import { useCallback, useContext, useEffect, useState } from 'react'
@@ -92,14 +93,14 @@ export const useGracefulRequest: UseGracefulRequest = <
         error: error as AxiosOrFetchError<typeof typeOfRequest, TData>,
       }))
     }
-  }, [typeOfRequest, setState])
+  }, [typeOfRequest])
 
   useEffect(() => {
     if (disabled) {
       return
     }
     callGracefulRequest()
-  }, [disabled])
+  }, [callGracefulRequest, disabled])
 
   return {
     ...state,

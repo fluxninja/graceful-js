@@ -44,3 +44,8 @@ export declare type FetchScenariosFnc = (
 ) => Promise<Response>
 
 export declare type GracefulErrorStatus = 429 | 503 | 504
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export type AnyObject<K extends string | number | symbol = string, V = any> = {
+  [key in K]: V
+}

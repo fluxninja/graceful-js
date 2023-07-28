@@ -1,4 +1,4 @@
-import { FC } from 'react'
+import React, { FC } from 'react'
 import { RateLimit } from './rate-limit'
 import { DefaultError } from './default-error'
 import { GracefulContextProps } from '../provider'
@@ -7,9 +7,9 @@ export const errorComponentMap = (
   errorProps?: GracefulContextProps
 ): Map<number, JSX.Element> =>
   new Map([
-    [429, <RateLimit {...errorProps} />],
-    [503, <RateLimit {...errorProps} />],
-    [504, <RateLimit {...errorProps} />],
+    [429, <RateLimit key={0} {...errorProps} />],
+    [503, <RateLimit key={1} {...errorProps} />],
+    [504, <RateLimit key={2} {...errorProps} />],
   ])
 
 export interface SelectErrorComponentProps {
