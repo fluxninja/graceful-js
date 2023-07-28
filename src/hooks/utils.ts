@@ -1,6 +1,6 @@
 export declare type CreateErrorIdPayload = {
   url: string
-  method?: string
+  method: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   requestBody?: any
 }
