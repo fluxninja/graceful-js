@@ -1,4 +1,5 @@
 ## Graceful-js (FluxNinja UI package)
+
 Install using `npm` or `yarn`
 
 ```shell
@@ -7,20 +8,10 @@ npm i @fluxninja-tools/graceful-js
 #yarn
 yarn add @fluxninja-tools/graceful-js
 ```
+
 Graceful-js is a powerful and intuitive React library designed to enhance your API communication by seamlessly handling retries based on status codes and intelligently understanding rate limiting headers and bodies. Its ability to automatically handle retries, allowing your application to gracefully recover from transient failures. Whether you're dealing with intermittent server issues or temporary network glitches, this library will make sure your API requests are retried in a controlled and efficient manner.
 
-Graceful-js is built on the concept of interceptors. It provides two types of interceptors fetch and axios.
-To use `graceful-js` with browser fetch. You just have to wrap your app with `GracefulProvider` like so:
-
-```javascript
-<GracefulProvider>
-  <App />
-</GracefulProvider>
-```
-
-The only thing a user has to do after wrapping their app with `GracefulProvider` is to use `GracefulError` component as their primary error component, and it will take care of the rest. This error component renders different components according to the status code. You have to pass url as parameter to error component. If you are fetching same url with different body at multiple places pass request body to error component as well. This is used to uniquely identify request made by app.
-
-## Custom Config
+## Config Graceful
 
 Here is how you can configure `graceful-js` according to your needs. If you are using axios, make sure you pass the axios instance to the config. You can create an instance by using `axios.create`.
 
@@ -32,7 +23,9 @@ Here is how you can configure `graceful-js` according to your needs. If you are 
  * @property {GracefulTheme} theme - The theme object to use for styling the error components.
  * @property {Map<number, JSX.Element>} errorComponentMap - A map of HTTP status codes to custom error components to render for each code.
  * @property {JSX.Element} DefaultErrorComponent - The default error component to render if no custom component is provided for a given status code.
- * @property {number} maxBackOffTime - Maximum wait time for retry. It is used in exponential back off. Default is 20 sec.
+ * @property {JSX.Element} WaitingRoomErrorComponent - The error component to render for the waiting room.
+ * @property {number} maxBackOffTime - maximum exponential back-off time in seconds. Default is 20 seconds.
+ * @property {number} maxRequestResolveTime - maximum time in seconds to wait for a request to resolve. Default is 10 seconds.
  */
 export declare type Config = {
   axios?: AxiosInstance
@@ -40,7 +33,9 @@ export declare type Config = {
   theme?: GracefulTheme
   errorComponentMap?: Map<number, JSX.Element>
   DefaultErrorComponent?: JSX.Element
+  WaitingRoomErrorComponent?: JSX.Element
   maxBackOffTime?: number
+  maxRequestResolveTime?: number
 }
 ```
 
@@ -61,115 +56,36 @@ const App: FC = () => (
 To get support for the rate limit headers and body use `gracefulRequest` instead of a regular fetch or axios. This function will retry according to the provided parameters. In case there is no Retry-After provided by server, library do retries in case of 429, 503 and 504 using exponential back off. Here is how you use `gracefulRequest` with `Axios` and `fetch`.
 
 ```javascript
-import { gracefulRequest } from 'graceful-js';
+import { gracefulRequest } from 'graceful-js'
 
 // gracefulRequest with Axios
-   gracefulRequest<'Axios'>('Axios',
-     () => api.get(/api),
-     (err, success) => {
-       if(err){
-       	// action on error
-	return
-       }
-       // action on success
-    })
+gracefulRequest <
+  'Axios' >
+  ('Axios',
+  () => api.get('yourEndPoint'),
+  (err, success) => {
+    if (err) {
+      // action on error
+      return
+    }
+    // action on success
+  })
 
 // gracefulRequest with fetch
-   gracefulRequest<'Fetch'>('Fetch',
-    () => fetch('yourEndPoint'),
-    (err, success) => {
-      if(err){
-        // action on error
-        return
-      }
-      // action on success
-    })
+gracefulRequest <
+  'Fetch' >
+  ('Fetch',
+  () => fetch('yourEndPoint'),
+  (err, success) => {
+    if (err) {
+      // action on error
+      return
+    }
+    // action on success
+  })
 ```
 
 Callback in `gracefulRequest` emit error or success response on every retry and it resolves with a promise once retries are done. This callback can be useful to show error to the user right away without waiting for the function to get resolved.
-
-You can then use `GracefulError` component like so:
-
-```javascript
-import { GracefulProvider, GracefulError, gracefulRequest } from 'graceful-js';
-const api = axios.create({
-	baseUrl: "yourbaseurl",
-	headers: {}
-})
-
-const AppComponent = () => {
-const [err, setErr] = React.useState(false)
-  const apiCall = () => {
-    gracefulRequest('Axios', () => api.get(/api), (err, success) => {
-       if(err){
-       	setErr(true)
-	return
-       }
-       setErr(false)
-    })
- }
-
-   return (
-	<>
-	  {
-	   err ? <GracefulError
-		   url="https://website.com/api/endpoint"
-		   requestBody={{ userID: "foo" }}
-		  />:(
-		// code to render if no error
-		<h1>Api call is successful</h1>
-		)
-	   }
-	   <button onClick={apiCall}>Click to fetch</button>
-	</>
-	)
-}
-```
-
-In the case of graphql, the library currently supports `graphql-request`. To implement `graceful-js`, after creating a graphql client, instead of using `client.request` use `gracefulGraphQLRequest`. In case of graphQL, it's mendatory to pass `requestBody` to `GracefulError` component. Pass an object of `{ query, variables }`. Here is the code snippet:
-
-```javascript
-import { GraphQLClient, gql } from 'graphql-request'
-import { useQuery } from 'react-query'
-import { gracefulGraphQLRequest } from 'graceful-js'
-
-export const gqlClient = new GraphQLClient(`${API_SERVICE_URL}/graphql`, {
-  headers: API_HEADERS,
-})
-
-export const queryHello = gql`
-  query hello {
-    hello
-  }
-`
-
-export const useCharacterQuery = () => {
-  return useQuery({
-    queryKey: ['hello'],
-    queryFn: () =>
-      gracefulGraphQLRequest(
-        `${API_SERVICE_URL}/graphql`,
-        gqlClient,
-        queryHello,
-        undefined,
-        API_HEADERS
-      ),
-    enabled: false,
-    retry: false,
-  })
-}
-
-// use graceful error like so:
-;<GracefulError
-  url={`${API_SERVICE_URL}/graphql`}
-  requestBody={{
-    query: queryHello,
-    variables: {}, // if there are any variables
-  }}
-/>
-```
-
-To implement graphql with any other graphql client, just add an extra `gracefulRequest` with fetch before calling the graphql endpoint with the package. This fetch request will get intercepted by graceful-js.
 
 ## Hooks
 
@@ -187,17 +103,44 @@ export declare type UseGracefulRequestProps<T extends 'Axios' | 'Fetch'> = {
     typeOfRequest: T;
     requestFnc: () => Promise<AxiosOrFetch<T>>;
     options?: {
+      // if disabled, api call will happen when called refetch
         disabled?: boolean;
     };
 };
-export declare type UseGracefulRequestReturn<T extends 'Axios' | 'Fetch', TData = any> = {
-    isError: boolean;
-    isLoading: boolean;
-    isRetry: boolean;
-    data: TData | null;
-    error: AxiosOrFetchError<T, TData> | null;
-    refetch: () => void;
-};
+export declare type UseGracefulRequestReturn<
+  T extends 'Axios' | 'Fetch',
+  TData = any
+> = {
+  isError: boolean
+  isLoading: boolean
+  isRetry: boolean
+  data: TData | null
+  error: AxiosOrFetchError<T, TData> | null
+  errorComponent: JSX.Element | null
+  refetch: () => void
+}
+```
+
+You can also use `useGraceful` hook to get last request response context along with a Map of errors happened in the app.
+
+## Error Components
+
+To use error components user can use use the following:
+
+```javascript
+
+<GracefulError
+  {...{
+    url: 'http://localhost:3009/api/ping', // endpoint for which this error component is rendering
+    method: 'GET', // method for the request
+    requestBody: {}, // request body in request, omit it if no request body
+  }}
+/>
+// or
+<GracefulErrorByStatus status={errorStatus} />
+const { errorInfo } = useGraceful()
+
+errorInfo.get('http://localhost:3009/api/rate-limit-get-{}') // create key with url + lowercase method + requestBody (if no request body add {})
 ```
 
 ## Scenarios

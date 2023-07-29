@@ -1,4 +1,4 @@
-import { FC } from 'react'
+import React, { FC } from 'react'
 import { DefaultErrorStyled } from './styled'
 import { Paper, Typography } from '@mui/material'
 import { ErrorIcon } from '../error-icon'

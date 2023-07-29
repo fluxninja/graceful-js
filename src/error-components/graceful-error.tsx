@@ -1,21 +1,16 @@
 import React, { FC } from 'react'
 import { DefaultError } from './default-error'
-import { ErrorInfoKey } from '../provider'
-import { useGraceful } from '../hooks'
+import { createErrorInfoKey, useGraceful } from '../hooks'
 import { SelectErrorComponentWithStatusCode } from './decider'
+import { CreateErrorIdPayload } from '../hooks'
 
-export interface GracefulErrorProps extends ErrorInfoKey {}
+export interface GracefulErrorProps extends CreateErrorIdPayload {}
 
-export const GracefulError: FC<GracefulErrorProps> = ({ url, requestBody }) => {
+export const GracefulError: FC<GracefulErrorProps> = (props) => {
   const { errorInfo, DefaultErrorComponent } = useGraceful()
 
   return (
-    errorInfo.get(
-      JSON.stringify({
-        url,
-        requestBody,
-      })
-    )?.errorComponent ||
+    errorInfo.get(createErrorInfoKey(props))?.errorComponent ||
     DefaultErrorComponent || <DefaultError />
   )
 }

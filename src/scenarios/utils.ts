@@ -1,6 +1,7 @@
 import { pick } from 'lodash'
 import { GracefulContextProps } from '../provider'
 import { AxiosResponse } from 'axios'
+import { AnyObject } from '../types'
 
 export declare type CreateGracefulPropsWithFetch = (
   clonedRes: Response,
@@ -21,9 +22,9 @@ export const createGracefulPropsWithFetch: CreateGracefulPropsWithFetch =
       ...pick(clonedRes, 'url', 'status'),
       isError: !clonedRes.ok,
       headers: recordHeaders,
-      responseBody: await clonedRes.json(),
+      responseBody: (await clonedRes.json()) as AnyObject,
       typeOfRequest: 'FETCH',
-      requestBody: options,
+      requestBody: options as AnyObject,
       method: options?.method || '',
     }
   }
@@ -51,7 +52,7 @@ export const createGracefulPropsWithAxios: CreateGracefulPropsWithAxios = (
     responseBody: res.data,
     typeOfRequest: 'AXIOS',
     method: res.config.method || '',
-    requestBody: res.config,
+    requestBody: res.config?.data,
   }
 }
 
@@ -79,7 +80,7 @@ export const axiosCompeteURL = (res: AxiosResponse) => {
 }
 
 export const getResetTime = (
-  responseBody: any,
+  responseBody: AnyObject,
   headers: Record<string, string>
 ) => {
   const deltaSeconds =

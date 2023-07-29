@@ -17,6 +17,7 @@ export const App: FC = () => {
       config={{
         axios: api,
         maxBackOffTime: 20,
+        maxRequestResolveTime: 5,
       }}
     >
       <TestComponent />
@@ -25,13 +26,21 @@ export const App: FC = () => {
 }
 
 export const TestComponent: FC = () => {
-  const { isError, refetch } = useGracefulRequest<'Axios'>({
+  const { isError, refetch, errorComponent } = useGracefulRequest<'Axios'>({
     typeOfRequest: 'Axios',
-    requestFnc: () => api.get('api/rate-limit'),
+    requestFnc: () => api.get('/api/rate-limit'),
+    options: {
+      disabled: true,
+    },
   })
   const { isError: pingError } = useGracefulRequest<'Axios'>({
     typeOfRequest: 'Axios',
     requestFnc: () => api.get('api/ping'),
+  })
+
+  const { errorComponent: waitRoomError } = useGracefulRequest<'Axios'>({
+    typeOfRequest: 'Axios',
+    requestFnc: () => api.get('api/wait-room'),
   })
 
   return (
@@ -42,25 +51,20 @@ export const TestComponent: FC = () => {
             Fetch Rate Limit
           </Button>
         </ColumnBox>
-        <ColumnBox>
-          {isError && (
-            <GracefulError
-              {...{
-                url: 'http://localhost:3009/api/rate-limit',
-              }}
-            />
-          )}
-        </ColumnBox>
+        <ColumnBox>{isError && errorComponent}</ColumnBox>
       </GridBox>
       <ColumnBox>
         {pingError && (
           <GracefulError
             {...{
               url: 'http://localhost:3009/api/ping',
+              method: 'GET',
+              requestBody: '',
             }}
           />
         )}
       </ColumnBox>
+      <ColumnBox>{waitRoomError}</ColumnBox>
     </>
   )
 }

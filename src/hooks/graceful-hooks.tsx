@@ -1,11 +1,19 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useTheme } from '@mui/material'
 import { GracefulStore, GracefulTheme } from '../provider'
-import { useCallback, useContext, useEffect, useState } from 'react'
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import {
   AxiosOrFetch,
   AxiosOrFetchError,
   gracefulRequest,
 } from '../graceful-request'
+import { GracefulErrorByStatus, WaitingRoom } from '../error-components'
 
 export const useGraceful = () => useContext(GracefulStore)
 
@@ -38,6 +46,7 @@ export declare type UseGracefulRequestReturn<
   isRetry: boolean
   data: TData | null
   error: AxiosOrFetchError<T, TData> | null
+  errorComponent: JSX.Element | null
   refetch: () => void
 }
 
@@ -68,20 +77,42 @@ export const useGracefulRequest: UseGracefulRequest = <
     isRetry: false,
     data: null,
     error: null,
+    errorComponent: null,
   })
+
+  const requestRef = useRef<() => Promise<AxiosOrFetch<T, TData>>>(() =>
+    requestFnc()
+  )
 
   const callGracefulRequest = useCallback(async () => {
     try {
       await gracefulRequest<typeof typeOfRequest, TData>(
         typeOfRequest,
-        () => requestFnc(),
+        requestRef.current,
         (error, res, { isLoading, isRetry } = {}) => {
+          const errorStatus =
+            typeOfRequest === 'Axios'
+              ? error?.status ||
+                (
+                  error as unknown as {
+                    response: {
+                      status: number
+                    }
+                  }
+                )?.response?.status
+              : error?.status
+
           setState({
             isLoading: !!isLoading,
             isRetry: !!isRetry,
             isError: !!error,
             data: res,
             error,
+            errorComponent: errorStatus ? (
+              <GracefulErrorByStatus status={errorStatus} />
+            ) : (
+              <WaitingRoom isLoading={!!isLoading} />
+            ),
           })
         }
       )
@@ -92,17 +123,17 @@ export const useGracefulRequest: UseGracefulRequest = <
         error: error as AxiosOrFetchError<typeof typeOfRequest, TData>,
       }))
     }
-  }, [typeOfRequest, setState])
+  }, [typeOfRequest, setState, requestRef])
 
   useEffect(() => {
     if (disabled) {
       return
     }
     callGracefulRequest()
-  }, [disabled])
+  }, [callGracefulRequest, disabled])
 
   return {
     ...state,
-    refetch: () => callGracefulRequest(),
+    refetch: callGracefulRequest,
   }
 }
