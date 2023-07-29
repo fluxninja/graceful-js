@@ -1,6 +1,6 @@
 import { Box, styled } from '@mui/material'
 
-export const RateLimitWrapper = styled(Box)(({ theme }) => ({
+export const WaitingRoomWrapper = styled(Box)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
@@ -10,7 +10,7 @@ export const RateLimitWrapper = styled(Box)(({ theme }) => ({
   maxWidth: 600,
 }))
 
-export const RateLimitGrid = styled(Box)(({ theme }) => ({
+export const WaitingRoomGrid = styled(Box)(({ theme }) => ({
   display: 'grid',
   gridTemplateColumns: 'auto 1fr',
   [theme.breakpoints.down('sm')]: {

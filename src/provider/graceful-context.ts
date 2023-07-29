@@ -37,6 +37,7 @@ export declare type GracefulProps = GracefulContext & {
   theme?: GracefulTheme
   errorComponentMap?: Map<number, JSX.Element>
   DefaultErrorComponent?: JSX.Element
+  WaitingRoomErrorComponent?: JSX.Element
   axios?: AxiosInstance
 }
 

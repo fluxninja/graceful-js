@@ -21,6 +21,9 @@ import { AxiosInstance } from 'axios'
  * @property {GracefulTheme} theme - The theme object to use for styling the error components.
  * @property {Map<number, JSX.Element>} errorComponentMap - A map of HTTP status codes to custom error components to render for each code.
  * @property {JSX.Element} DefaultErrorComponent - The default error component to render if no custom component is provided for a given status code.
+ * @property {JSX.Element} WaitingRoomErrorComponent - The error component to render for the waiting room.
+ * @property {number} maxBackOffTime - maximum exponential back-off time in seconds. Default is 20 seconds.
+ * @property {number} maxRequestResolveTime - maximum time in seconds to wait for a request to resolve. Default is 10 seconds.
  */
 export declare type Config = {
   axios?: AxiosInstance
@@ -28,7 +31,9 @@ export declare type Config = {
   theme?: GracefulTheme
   errorComponentMap?: Map<number, JSX.Element>
   DefaultErrorComponent?: JSX.Element
+  WaitingRoomErrorComponent?: JSX.Element
   maxBackOffTime?: number
+  maxRequestResolveTime?: number
 }
 
 export interface GracefulProviderProps {
@@ -36,6 +41,7 @@ export interface GracefulProviderProps {
 }
 
 export let maxBackOffTime = 20
+export let maxRequestResolveTime = 10
 
 export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
   children,
@@ -49,6 +55,10 @@ export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
     maxBackOffTime = config?.maxBackOffTime || 20
   }, [config?.maxBackOffTime])
 
+  useEffect(() => {
+    maxRequestResolveTime = config?.maxRequestResolveTime || 10
+  }, [config?.maxRequestResolveTime])
+
   const value: GracefulProps = useMemo(
     () => ({
       ...props,
@@ -58,6 +68,9 @@ export const GracefulProvider: FC<PropsWithChildren<GracefulProviderProps>> = ({
       }),
       ...(config?.DefaultErrorComponent && {
         DefaultErrorComponent: config.DefaultErrorComponent,
+      }),
+      ...(config?.WaitingRoomErrorComponent && {
+        WaitingRoomErrorComponent: config.WaitingRoomErrorComponent,
       }),
       axios: config?.axios,
       setGraceful,

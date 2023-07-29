@@ -13,7 +13,7 @@ import {
   AxiosOrFetchError,
   gracefulRequest,
 } from '../graceful-request'
-import { GracefulErrorByStatus } from '../error-components'
+import { GracefulErrorByStatus, WaitingRoom } from '../error-components'
 
 export const useGraceful = () => useContext(GracefulStore)
 
@@ -110,7 +110,9 @@ export const useGracefulRequest: UseGracefulRequest = <
             error,
             errorComponent: errorStatus ? (
               <GracefulErrorByStatus status={errorStatus} />
-            ) : null,
+            ) : (
+              <WaitingRoom isLoading={!!isLoading} />
+            ),
           })
         }
       )

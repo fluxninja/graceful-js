@@ -17,6 +17,7 @@ export const App: FC = () => {
       config={{
         axios: api,
         maxBackOffTime: 20,
+        maxRequestResolveTime: 5,
       }}
     >
       <TestComponent />
@@ -25,20 +26,23 @@ export const App: FC = () => {
 }
 
 export const TestComponent: FC = () => {
-  const { isError, refetch, errorComponent, error } =
-    useGracefulRequest<'Axios'>({
-      typeOfRequest: 'Axios',
-      requestFnc: () => api.get('/api/rate-limit'),
-      options: {
-        disabled: true,
-      },
-    })
+  const { isError, refetch, errorComponent } = useGracefulRequest<'Axios'>({
+    typeOfRequest: 'Axios',
+    requestFnc: () => api.get('/api/rate-limit'),
+    options: {
+      disabled: true,
+    },
+  })
   const { isError: pingError } = useGracefulRequest<'Axios'>({
     typeOfRequest: 'Axios',
     requestFnc: () => api.get('api/ping'),
   })
 
-  console.log(error)
+  const { errorComponent: waitRoomError } = useGracefulRequest<'Axios'>({
+    typeOfRequest: 'Axios',
+    requestFnc: () => api.get('api/wait-room'),
+  })
+
   return (
     <>
       <GridBox>
@@ -60,6 +64,7 @@ export const TestComponent: FC = () => {
           />
         )}
       </ColumnBox>
+      <ColumnBox>{waitRoomError}</ColumnBox>
     </>
   )
 }
