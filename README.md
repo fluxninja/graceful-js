@@ -16,6 +16,7 @@ Graceful-js is a powerful and intuitive React library designed to enhance your A
 Here is how you can configure `graceful-js` according to your needs. If you are using axios, make sure you pass the axios instance to the config. You can create an instance by using `axios.create`.
 
 ```javascript
+
 /**
  * Configuration object for the GracefulProvider component.
  * @property {AxiosInstance} axios - An Axios instance to use for making HTTP requests.
@@ -26,6 +27,7 @@ Here is how you can configure `graceful-js` according to your needs. If you are 
  * @property {JSX.Element} WaitingRoomErrorComponent - The error component to render for the waiting room.
  * @property {number} maxBackOffTime - maximum exponential back-off time in seconds. Default is 20 seconds.
  * @property {number} maxRequestResolveTime - maximum time in seconds to wait for a request to resolve. Default is 10 seconds.
+ * @property {ExponentialBackOffFn} exponentialBackOffFn - Provide your own exponential back-off logic.
  */
 export declare type Config = {
   axios?: AxiosInstance
@@ -36,6 +38,17 @@ export declare type Config = {
   WaitingRoomErrorComponent?: JSX.Element
   maxBackOffTime?: number
   maxRequestResolveTime?: number
+  /**
+   *
+   * @param status
+   * @param numberOfRetries
+   * @returns retryAfter - number time in seconds
+   * This function is used if no retry after is specified by server. Graceful-js exponential back-off function is
+   * inspired by this google example. For more information, see https://cloud.google.com/iot/docs/how-tos/exponential-backoff.
+   * If you want to provide a custom exponential back-off function provide this function in config.
+   * For inspiration, see https://github.com/fluxninja/graceful-js/blob/main/src/scenarios/decider.ts
+   */
+  exponentialBackOffFn?: ExponentialBackOffFn
 }
 ```
 
