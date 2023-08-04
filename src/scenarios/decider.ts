@@ -1,4 +1,4 @@
-import { maxBackOffTime } from '../provider'
+import { maxBackOffTime, userExponentialBackOffFn } from '../provider'
 import { AnyObject } from '../types'
 import { getResetTime } from './utils'
 
@@ -21,18 +21,25 @@ export const checkHeaderAndBody = (
   }
 }
 
-// used in case of 429 or 5xx errors without retry after headers
-export const exponentialBackOff = (
+export declare type ExponentialBackOffFn = (
   status: number,
-  rateLimitInfoCheck: boolean,
   numberOfRetries: number
 ) => {
-  if (rateLimitInfoCheck) {
-    return {
-      retryAfter: 0,
-    }
-  }
+  retryAfter: number
+}
 
+/**
+ *
+ * @param status
+ * @param numberOfRetries
+ * @returns retryAfter - number time in seconds
+ * This function is used if no retry after is specified by server. Graceful-js exponential back-off function is
+ * inspired by this google example. For more information, see https://cloud.google.com/iot/docs/how-tos/exponential-backoff
+ */
+export const exponentialBackOffFn: ExponentialBackOffFn = (
+  status,
+  numberOfRetries
+) => {
   if (status !== 429 && status !== 503 && status !== 504) {
     return {
       retryAfter: 0,
@@ -51,6 +58,23 @@ export const exponentialBackOff = (
   }
 
   return { retryAfter: retryAfter / 1000 }
+}
+
+// used in case of 429 or 5xx errors without retry after headers
+export const exponentialBackOff = (
+  status: number,
+  rateLimitInfoCheck: boolean,
+  numberOfRetries: number
+) => {
+  if (rateLimitInfoCheck) {
+    return {
+      retryAfter: 0,
+    }
+  }
+
+  return userExponentialBackOffFn
+    ? userExponentialBackOffFn(status, numberOfRetries)
+    : exponentialBackOffFn(status, numberOfRetries)
 }
 
 function getRndInteger(min: number, max: number) {

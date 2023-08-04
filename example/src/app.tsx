@@ -16,8 +16,8 @@ export const App: FC = () => {
     <GracefulProvider
       config={{
         axios: api,
-        maxBackOffTime: 20,
-        maxRequestResolveTime: 5,
+        maxBackOffTime: 10,
+        maxRequestResolveTime: 8,
       }}
     >
       <TestComponent />
@@ -59,7 +59,6 @@ export const TestComponent: FC = () => {
             {...{
               url: 'http://localhost:3009/api/ping',
               method: 'GET',
-              requestBody: '',
             }}
           />
         )}
