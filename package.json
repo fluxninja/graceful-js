@@ -14,7 +14,7 @@
     "dist"
   ],
   "types": "dist/index.d.ts",
-  "keywords": [],
+  "keywords": [ ],
   "author": "FluxNinja",
   "license": "ISC",
   "devDependencies": {

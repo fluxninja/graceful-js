@@ -24,9 +24,9 @@ export type AxiosOrFetch<
 > = T extends 'Axios'
   ? AxiosResponse<TData> & { rateLimitInfo?: RateLimitInfo }
   : Omit<Response, 'json'> & {
-      rateLimitInfo?: RateLimitInfo
-      json: () => Promise<TData>
-    }
+    rateLimitInfo?: RateLimitInfo
+    json: () => Promise<TData>
+  }
 
 export type AxiosOrFetchError<
   T extends 'Axios' | 'Fetch',
@@ -34,19 +34,19 @@ export type AxiosOrFetchError<
 > = T extends 'Axios'
   ? AxiosError<TData> & { rateLimitInfo?: RateLimitInfo }
   : Omit<Response, 'json'> & {
-      rateLimitInfo?: RateLimitInfo
-      json: () => Promise<TData>
-    }
+    rateLimitInfo?: RateLimitInfo
+    json: () => Promise<TData>
+  }
 
 export declare type GetGracefulPropsParams =
   | {
-      typeOfRequest: 'Axios'
-      response: AxiosOrFetch<'Axios'>
-    }
+    typeOfRequest: 'Axios'
+    response: AxiosOrFetch<'Axios'>
+  }
   | {
-      typeOfRequest: 'Fetch'
-      response: AxiosOrFetch<'Fetch'>
-    }
+    typeOfRequest: 'Fetch'
+    response: AxiosOrFetch<'Fetch'>
+  }
 export const getGracefulProps = async (params: GetGracefulPropsParams) => {
   const { typeOfRequest, response } = params
   switch (typeOfRequest) {
@@ -77,7 +77,7 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch', TData = any>(
       isRetry?: boolean
       isLoading?: boolean
     }
-  ) => void = () => {},
+  ) => void = () => { },
   retryAttempts = 0
 ): Promise<AxiosOrFetch<T, TData>> {
   const findIsRetry = () => (retryAttempts > 0 ? true : false)
