@@ -1,6 +1,10 @@
-## Graceful-js (FluxNinja UI package)
+# graceful-js
 
-Install using `npm` or `yarn`
+`graceful-js` is a robust React library that enhances API communication by intelligently handling retries and understanding rate limiting headers and bodies. It allows your application to recover gracefully from transient failures.
+
+## Installation
+
+Install using `npm` or `yarn`:
 
 ```shell
 #npm
@@ -9,26 +13,11 @@ npm i @fluxninja-tools/graceful-js
 yarn add @fluxninja-tools/graceful-js
 ```
 
-Graceful-js is a powerful and intuitive React library designed to enhance your API communication by seamlessly handling retries based on status codes and intelligently understanding rate limiting headers and bodies. Its ability to automatically handle retries, allowing your application to gracefully recover from transient failures. Whether you're dealing with intermittent server issues or temporary network glitches, this library will make sure your API requests are retried in a controlled and efficient manner.
+## Configuration
 
-## Config Graceful
-
-Here is how you can configure `graceful-js` according to your needs. If you are using axios, make sure you pass the axios instance to the config. You can create an instance by using `axios.create`.
+Configure `graceful-js` to suit your needs. If using `axios`, pass the `axios` instance to the config:
 
 ```javascript
-
-/**
- * Configuration object for the GracefulProvider component.
- * @property {AxiosInstance} axios - An Axios instance to use for making HTTP requests.
- * @property {string[]} urlList - A list of URLs to intercept and handle gracefully.
- * @property {GracefulTheme} theme - The theme object to use for styling the error components.
- * @property {Map<number, JSX.Element>} errorComponentMap - A map of HTTP status codes to custom error components to render for each code.
- * @property {JSX.Element} DefaultErrorComponent - The default error component to render if no custom component is provided for a given status code.
- * @property {JSX.Element} WaitingRoomErrorComponent - The error component to render for the waiting room.
- * @property {number} maxBackOffTime - maximum exponential back-off time in seconds. Default is 20 seconds.
- * @property {number} maxRequestResolveTime - maximum time in seconds to wait for a request to resolve. Default is 10 seconds.
- * @property {ExponentialBackOffFn} exponentialBackOffFn - Provide your own exponential back-off logic.
- */
 export declare type Config = {
   axios?: AxiosInstance
   urlList?: string[]
@@ -38,21 +27,11 @@ export declare type Config = {
   WaitingRoomErrorComponent?: JSX.Element
   maxBackOffTime?: number
   maxRequestResolveTime?: number
-  /**
-   *
-   * @param status
-   * @param numberOfRetries
-   * @returns retryAfter - number time in seconds
-   * This function is used if no retry after is specified by server. Graceful-js exponential back-off function is
-   * inspired by this google example. For more information, see https://cloud.google.com/iot/docs/how-tos/exponential-backoff.
-   * If you want to provide a custom exponential back-off function provide this function in config.
-   * For inspiration, see https://github.com/fluxninja/graceful-js/blob/main/src/scenarios/decider.ts
-   */
   exponentialBackOffFn?: ExponentialBackOffFn
 }
 ```
 
-Pass this config object to the `GracefulProvider` like so:
+Apply this config object to the `GracefulProvider`:
 
 ```javascript
 import { GracefulProvider } from 'graceful-js'
@@ -66,82 +45,56 @@ const App: FC = () => (
 )
 ```
 
-To get support for the rate limit headers and body use `gracefulRequest` instead of a regular fetch or axios. This function will retry according to the provided parameters. In case there is no Retry-After provided by server, library do retries in case of 429, 503 and 504 using exponential back off. Here is how you use `gracefulRequest` with `Axios` and `fetch`.
+## Usage
+
+Use `gracefulRequest` for support with rate limit headers and body. This function will retry requests based on the provided parameters:
 
 ```javascript
 import { gracefulRequest } from 'graceful-js'
 
 // gracefulRequest with Axios
-gracefulRequest <
-  'Axios' >
-  ('Axios',
-  () => api.get('yourEndPoint'),
-  (err, success) => {
-    if (err) {
-      // action on error
-      return
-    }
-    // action on success
-  })
-
-// gracefulRequest with fetch
-gracefulRequest <
-  'Fetch' >
-  ('Fetch',
-  () => fetch('yourEndPoint'),
-  (err, success) => {
-    if (err) {
-      // action on error
-      return
-    }
-    // action on success
-  })
+gracefulRequest<'Axios'>('Axios', () => api.get('yourEndpoint'), (err, success) => {
+  if (err) {
+    // action on error
+    return
+  }
+  // action on success
+})
 ```
 
-Callback in `gracefulRequest` emit error or success response on every retry and it resolves with a promise once retries are done. This callback can be useful to show error to the user right away without waiting for the function to get resolved.
+```javascript
+import { gracefulRequest } from 'graceful-js'
+
+// gracefulRequest with Fetch
+gracefulRequest<'Fetch'>('Fetch', () => fetch('yourEndpoint'), (err, success) => {
+  if (err) {
+    // action on error
+    return
+  }
+  // action on success
+})
+```
+
+The `gracefulRequest` callback emits an error or success response at each retry, resolving with a promise when retries complete. It allows immediate user notification of errors without waiting for function resolution.
 
 ## Hooks
 
-You can also use `useGracefulRequest` hook. Here is the code snippet.
+Use the `useGracefulRequest` hook:
 
 ```javascript
-  const { isError, refetch, data, isLoading, isRetry, error } = useGracefulRequest<'Axios'>({
-    typeOfRequest: 'Axios',
-    requestFnc: () => api.get('api/rate-limit'),
-  })
-
-  // here are the hook types:
-
-export declare type UseGracefulRequestProps<T extends 'Axios' | 'Fetch'> = {
-    typeOfRequest: T;
-    requestFnc: () => Promise<AxiosOrFetch<T>>;
-    options?: {
-      // if disabled, api call will happen when called refetch
-        disabled?: boolean;
-    };
-};
-export declare type UseGracefulRequestReturn<
-  T extends 'Axios' | 'Fetch',
-  TData = any
-> = {
-  isError: boolean
-  isLoading: boolean
-  isRetry: boolean
-  data: TData | null
-  error: AxiosOrFetchError<T, TData> | null
-  errorComponent: JSX.Element | null
-  refetch: () => void
-}
+const { isError, refetch, data, isLoading, isRetry, error } = useGracefulRequest<'Axios'>({
+  typeOfRequest: 'Axios',
+  requestFnc: () => api.get('api/rate-limit'),
+})
 ```
 
-You can also use `useGraceful` hook to get last request response context along with a Map of errors happened in the app.
+The `useGraceful` hook can also be utilized to obtain the context of the last request response, in addition to a Map of application errors.
 
 ## Error Components
 
-To use error components user can use use the following:
+Use error components as follows:
 
 ```javascript
-
 <GracefulError
   {...{
     url: 'http://localhost:3009/api/ping', // endpoint for which this error component is rendering
@@ -149,16 +102,17 @@ To use error components user can use use the following:
     requestBody: {}, // request body in request, omit it if no request body
   }}
 />
-// or
+```
+
+```javascript
 <GracefulErrorByStatus status={errorStatus} />
 const { errorInfo } = useGraceful()
-
 errorInfo.get('http://localhost:3009/api/rate-limit-get-{}') // create key with url + lowercase method + requestBody (if no request body add {})
 ```
 
 ## Scenarios
 
-To get support for the rate limiting scenario by using the response body, send the following inside the error response body.
+For rate limiting scenarios, send the following inside the error response body:
 
 ```javascript
 export declare type RateLimitResponseBody = {
@@ -171,37 +125,22 @@ export declare type RateLimitResponseBody = {
 }
 ```
 
-To get support for rate limiting scenario by using headers. Add following headers:
+For rate limiting scenarios using headers, add the following headers:
 
 ```javascript
-/**
- * Generic rate limit headers
- */
+// Generic rate limit headers
 export declare type RateLimitHeaders = {
-  /**
-   * The number of requests that can be made
-   */
+  // The number of requests that can be made.
   'x-ratelimit-limit': string
-  /**
-   * The number of remaining requests that can be made
-   */
+  // The number of remaining requests that can be made.
   'x-ratelimit-remaining': string
-  /**
-   * The number of seconds(delta-seconds) until the rate limit resets
-   */
+  // The number of seconds(delta-seconds) until the rate limit resets.
   'x-ratelimit-reset': string
-  /**
-   * Returned only on HTTP 429 responses if the rate limit encountered is the global rate limit (not per-route)
-   */
+  // Returned only on HTTP 429 responses if the rate limit encountered is the global rate limit (not per-route).
   'x-ratelimit-global': string
-  /**
-   * The scope of the rate limit upto which it is valid. For example,
-   * "user" or "bot"
-   */
+  // The scope of the rate limit upto which it is valid. For example, "user" or "bot".
   'x-ratelimit-scope': string
-  /**
-   * The number of seconds after which the rate limit resets
-   */
+  // The number of seconds after which the rate limit resets.
   'retry-after': string
 }
 ```
