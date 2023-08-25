@@ -93,13 +93,13 @@ export const useGracefulRequest: UseGracefulRequest = <
           const errorStatus =
             typeOfRequest === 'Axios'
               ? error?.status ||
-              (
-                error as unknown as {
-                  response: {
-                    status: number
+                (
+                  error as unknown as {
+                    response: {
+                      status: number
+                    }
                   }
-                }
-              )?.response?.status
+                )?.response?.status
               : error?.status
 
           setState({
