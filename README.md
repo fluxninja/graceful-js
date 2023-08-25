@@ -53,34 +53,26 @@ Use `gracefulRequest` for support with rate limit headers and body. This functio
 import { gracefulRequest } from 'graceful-js'
 
 // gracefulRequest with Axios
-gracefulRequest <
-  'Axios' >
-  ('Axios',
-  () => api.get('yourEndpoint'),
-  (err, success) => {
-    if (err) {
-      // action on error
-      return
-    }
-    // action on success
-  })
+gracefulRequest<'Axios'>('Axios', () => api.get('yourEndpoint'), (err, success) => {
+  if (err) {
+    // action on error
+    return
+  }
+  // action on success
+})
 ```
 
 ```javascript
 import { gracefulRequest } from 'graceful-js'
 
 // gracefulRequest with Fetch
-gracefulRequest <
-  'Fetch' >
-  ('Fetch',
-  () => fetch('yourEndpoint'),
-  (err, success) => {
-    if (err) {
-      // action on error
-      return
-    }
-    // action on success
-  })
+gracefulRequest<'Fetch'>('Fetch', () => fetch('yourEndpoint'), (err, success) => {
+  if (err) {
+    // action on error
+    return
+  }
+  // action on success
+})
 ```
 
 The `gracefulRequest` callback emits an error or success response at each retry, resolving with a promise when retries complete. It allows immediate user notification of errors without waiting for function resolution.
@@ -90,13 +82,10 @@ The `gracefulRequest` callback emits an error or success response at each retry,
 Use the `useGracefulRequest` hook:
 
 ```javascript
-const { isError, refetch, data, isLoading, isRetry, error } =
-  useGracefulRequest <
-  'Axios' >
-  {
-    typeOfRequest: 'Axios',
-    requestFnc: () => api.get('api/rate-limit'),
-  }
+const { isError, refetch, data, isLoading, isRetry, error } = useGracefulRequest<'Axios'>({
+  typeOfRequest: 'Axios',
+  requestFnc: () => api.get('api/rate-limit'),
+})
 ```
 
 The `useGraceful` hook can also be utilized to obtain the context of the last request response, in addition to a Map of application errors.
@@ -116,7 +105,7 @@ Use error components as follows:
 ```
 
 ```javascript
-;<GracefulErrorByStatus status={errorStatus} />
+<GracefulErrorByStatus status={errorStatus} />
 const { errorInfo } = useGraceful()
 errorInfo.get('http://localhost:3009/api/rate-limit-get-{}') // create key with url + lowercase method + requestBody (if no request body add {})
 ```
