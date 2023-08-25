@@ -127,6 +127,8 @@ export declare type RateLimitResponseBody = {
 
 For rate limiting scenarios using headers, add the following headers:
 
+**Note**: Rate limit headers are inspired by IEFT draft. For more information, visit [IEFT website](https://www.ietf.org/archive/id/draft-polli-ratelimit-headers-02.html)
+
 ```javascript
 // Generic rate limit headers
 export declare type RateLimitHeaders = {
