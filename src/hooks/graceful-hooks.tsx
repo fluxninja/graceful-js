@@ -11,6 +11,8 @@ import React, {
 import {
   AxiosOrFetch,
   AxiosOrFetchError,
+  GracefulRequestOptions,
+  defaultGracefulRequestOptions,
   gracefulRequest,
 } from '../graceful-request'
 import { GracefulErrorByStatus, WaitingRoom } from '../error-components'
@@ -34,7 +36,7 @@ export declare type UseGracefulRequestProps<T extends 'Axios' | 'Fetch'> = {
   requestFnc: () => Promise<AxiosOrFetch<T>>
   options?: {
     disabled?: boolean
-  }
+  } & Partial<GracefulRequestOptions>
 }
 
 export declare type UseGracefulRequestReturn<
@@ -66,7 +68,11 @@ export const useGracefulRequest: UseGracefulRequest = <
   const {
     typeOfRequest,
     requestFnc,
-    options: { disabled = false } = {},
+    options: { disabled, ...gracefulRequestOptions } = {
+      disabled: false,
+      ...defaultGracefulRequestOptions,
+      ...request?.options,
+    },
   } = request
 
   const [state, setState] = useState<
@@ -82,6 +88,10 @@ export const useGracefulRequest: UseGracefulRequest = <
 
   const requestRef = useRef<() => Promise<AxiosOrFetch<T, TData>>>(() =>
     requestFnc()
+  )
+
+  const gracefulRequestOptionsRef = useRef<Partial<GracefulRequestOptions>>(
+    gracefulRequestOptions
   )
 
   const callGracefulRequest = useCallback(async () => {
@@ -114,7 +124,8 @@ export const useGracefulRequest: UseGracefulRequest = <
               <WaitingRoom isLoading={!!isLoading} />
             ),
           })
-        }
+        },
+        gracefulRequestOptionsRef.current
       )
     } catch (error) {
       setState((prevState) => ({
@@ -123,7 +134,7 @@ export const useGracefulRequest: UseGracefulRequest = <
         error: error as AxiosOrFetchError<typeof typeOfRequest, TData>,
       }))
     }
-  }, [typeOfRequest, setState, requestRef])
+  }, [typeOfRequest])
 
   useEffect(() => {
     if (disabled) {

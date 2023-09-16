@@ -1,12 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
+  ExponentialBackOffFn,
   checkHeaderAndBody,
   createGracefulPropsWithAxios,
   createGracefulPropsWithFetch,
   exponentialBackOff,
+  exponentialBackOffFn,
 } from '../scenarios'
 import { AxiosError, AxiosResponse } from 'axios'
 import { AnyObject } from '../types'
+import { maxBackOffTime } from '../provider'
+import { noop } from 'lodash'
 
 export declare type RateLimitInfo = {
   retryAfter: number
@@ -59,12 +63,25 @@ export const getGracefulProps = async (params: GetGracefulPropsParams) => {
   }
 }
 
+export declare type GracefulRequestOptions = {
+  enableRetry: boolean
+  exponentialBackOffFn: ExponentialBackOffFn
+  maxBackOffTime: number
+}
+
+export const defaultGracefulRequestOptions = {
+  enableRetry: true,
+  exponentialBackOffFn,
+  maxBackOffTime,
+}
+
 /**
  * Makes a graceful request using either Axios or Fetch.
  *
  * @param {'Axios' | 'Fetch'} typeOfRequest - The type of request to make.
  * @param {() => Promise<AxiosOrFetch<T>>} requestFnc - A function that returns a promise that resolves to the response object.
  * @param {(err: AxiosOrFetch<T> | null, response: AxiosOrFetch<T> | null) => void} [callback=() => {}] - An optional callback function that is called with the error and response objects.
+ * @param {GracefulRequestOptions} configOptions - config options to customize retry behavior.
  * @returns {Promise<AxiosOrFetch<T>>} - A promise that resolves to the response object.
  */
 export async function gracefulRequest<T extends 'Axios' | 'Fetch', TData = any>(
@@ -77,9 +94,15 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch', TData = any>(
       isRetry?: boolean
       isLoading?: boolean
     }
-  ) => void = () => {},
+  ) => void = noop,
+  configOptions: Partial<GracefulRequestOptions> = defaultGracefulRequestOptions,
   retryAttempts = 0
 ): Promise<AxiosOrFetch<T, TData>> {
+  const options: Partial<GracefulRequestOptions> = {
+    ...defaultGracefulRequestOptions,
+    ...configOptions,
+  }
+
   const findIsRetry = () => (retryAttempts > 0 ? true : false)
   const retryRequest = async (err: any) => {
     callback(err, null, {
@@ -88,10 +111,6 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch', TData = any>(
     })
     const sendableRes = typeOfRequest === 'Axios' ? err?.response : err
     if (!sendableRes) {
-      callback(err, null, {
-        isRetry: findIsRetry(),
-        isLoading: false,
-      })
       throw err
     }
 
@@ -115,7 +134,8 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch', TData = any>(
     const { retryAfter: exponentialRetryAfterTime } = exponentialBackOff(
       status,
       check,
-      retryAttempts
+      retryAttempts,
+      options?.exponentialBackOffFn
     )
 
     const retryAfter = exponentialRetryAfterTime
@@ -127,6 +147,15 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch', TData = any>(
       retryLimit,
       rateLimitRemaining,
       resetAfter,
+    }
+
+    if (!options?.enableRetry) {
+      callback({ ...err, rateLimitInfo }, null, {
+        isRetry: findIsRetry(),
+        isLoading: false,
+      })
+
+      throw err
     }
 
     if (!retryAfter) {
@@ -145,6 +174,7 @@ export async function gracefulRequest<T extends 'Axios' | 'Fetch', TData = any>(
         typeOfRequest,
         requestFnc,
         callback,
+        options,
         retryAttempts + 1
       )
     }

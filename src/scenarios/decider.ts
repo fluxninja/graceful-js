@@ -1,3 +1,4 @@
+import { isFunction } from 'lodash'
 import { maxBackOffTime, userExponentialBackOffFn } from '../provider'
 import { AnyObject } from '../types'
 import { getResetTime } from './utils'
@@ -25,6 +26,9 @@ export declare type ExponentialBackOffFn = (
   status: number,
   numberOfRetries: number
 ) => {
+  /**
+   * Retry after time in seconds.
+   */
   retryAfter: number
 }
 
@@ -64,12 +68,17 @@ export const exponentialBackOffFn: ExponentialBackOffFn = (
 export const exponentialBackOff = (
   status: number,
   rateLimitInfoCheck: boolean,
-  numberOfRetries: number
+  numberOfRetries: number,
+  backOffFunc?: ExponentialBackOffFn
 ) => {
   if (rateLimitInfoCheck) {
     return {
       retryAfter: 0,
     }
+  }
+
+  if (isFunction(backOffFunc)) {
+    return backOffFunc(status, numberOfRetries)
   }
 
   return userExponentialBackOffFn
