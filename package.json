@@ -1,6 +1,6 @@
 {
   "name": "@fluxninja/graceful-js",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Library for handling rate limits from FluxNinja Aperture and other backends",
   "main": "dist/index.js",
   "scripts": {
