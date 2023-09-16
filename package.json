@@ -1,7 +1,7 @@
 {
   "name": "@fluxninja/graceful-js",
   "version": "0.2.1",
-  "description": "Library for graceful degradation when rate limits are hit",
+  "description": "Library for handling rate limits from FluxNinja Aperture and other backends",
   "main": "dist/index.js",
   "scripts": {
     "build": "npm run format && rm -rf dist && tsc",
