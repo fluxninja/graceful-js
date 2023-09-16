@@ -47,7 +47,7 @@ const App: FC = () => (
 
 ## Usage
 
-Use `gracefulRequest` for support with rate limit headers and body. This function will retry requests based on the provided parameters:
+Use `gracefulRequest` for support with rate limit headers and body. You can also config according to your needs at request level using `configOptions` argument. This function will retry requests based on the provided parameters:
 
 ```javascript
 import { gracefulRequest } from 'graceful-js'
