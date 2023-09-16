@@ -3,7 +3,7 @@ import {
   GracefulProvider,
   GracefulError,
   useGracefulRequest,
-} from '@fluxninja-tools/graceful-js'
+} from '@fluxninja/graceful-js'
 import { Box, Button, styled } from '@mui/material'
 import axios from 'axios'
 
