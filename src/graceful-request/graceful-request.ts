@@ -66,7 +66,6 @@ export const getGracefulProps = async (params: GetGracefulPropsParams) => {
 export declare type GracefulRequestOptions = {
   enableRetry: boolean
   exponentialBackOffFn: ExponentialBackOffFn
-  maxBackOffTime: number
 }
 
 export const defaultGracefulRequestOptions = {
