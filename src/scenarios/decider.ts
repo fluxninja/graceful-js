@@ -77,7 +77,7 @@ export const exponentialBackOff = (
     }
   }
 
-  if (isFunction(backOffFunc)) {
+  if (isFunction(backOffFunc) && !userExponentialBackOffFn) {
     return backOffFunc(status, numberOfRetries)
   }
 
