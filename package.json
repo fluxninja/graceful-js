@@ -1,6 +1,6 @@
 {
   "name": "@fluxninja/graceful-js",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Library for handling rate limits from FluxNinja Aperture and other backends",
   "main": "dist/index.js",
   "scripts": {
@@ -11,7 +11,7 @@
     "local:publish": "npx local-package-publisher -p"
   },
   "files": [
-    "dist"
+    "dist/**/*"
   ],
   "types": "dist/index.d.ts",
   "keywords": [],
