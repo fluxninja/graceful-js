@@ -11,7 +11,7 @@
     "local:publish": "npx local-package-publisher -p"
   },
   "files": [
-    "dist"
+    "dist/**/*"
   ],
   "types": "dist/index.d.ts",
   "keywords": [],
