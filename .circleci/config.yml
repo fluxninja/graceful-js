@@ -31,6 +31,7 @@ jobs:
             if [[ "<< parameters.dry-run >>" == "true" ]]; then
                args+=( --dry-run )
             fi
+            npm run build
             npm publish "${args[@]}"
 
 workflows:
@@ -44,7 +45,7 @@ workflows:
             matches:
               &is_not_empty_tag {
                 value: << pipeline.git.tag >>,
-                pattern: "^.+$",
+                pattern: '^.+$',
               }
         - not: &scheduled
             equal: [scheduled_pipeline, << pipeline.trigger_source >>]
@@ -55,8 +56,7 @@ workflows:
 
   publish-release:
     when:
-      matches:
-        { value: << pipeline.git.tag >>, pattern: "^releases/.*$" }
+      matches: { value: << pipeline.git.tag >>, pattern: '^releases/.*$' }
     jobs:
       - publish-release:
           context: npmjs
@@ -69,18 +69,18 @@ workflows:
 
 commands:
   asdf_install:
-    description: "Install tools using ASDF"
+    description: 'Install tools using ASDF'
     parameters:
       tools:
         type: string
         description:
-          "Newline separated list of tools to install. If empty, will install
-          everything."
-        default: ""
+          'Newline separated list of tools to install. If empty, will install
+          everything.'
+        default: ''
       cache_name:
         type: string
-        description: "Name of asdf cache"
-        default: "default"
+        description: 'Name of asdf cache'
+        default: 'default'
     steps:
       - run:
           name: Install ASDF
