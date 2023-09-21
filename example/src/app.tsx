@@ -25,10 +25,32 @@ export const App: FC = () => {
   )
 }
 
+export declare type RateLimitErrorResponse = {
+  message: string
+  retryAfter: number
+  retryLimit: number
+  rateLimitRemaining: number
+  rateLimitReset: number
+  sentBody: {
+    name: string
+  }
+}
+
 export const TestComponent: FC = () => {
-  const { isError, refetch, errorComponent } = useGracefulRequest<'Axios'>({
+  const { isError, refetch, errorComponent } = useGracefulRequest<
+    'Axios',
+    RateLimitErrorResponse,
+    {
+      name: string
+    }
+  >({
     typeOfRequest: 'Axios',
-    requestFnc: () => api.get('/api/rate-limit'),
+    requestFnc: (data) =>
+      api({
+        url: '/api/rate-limit',
+        method: 'POST',
+        data,
+      }),
     options: {
       disabled: true,
     },
@@ -47,7 +69,15 @@ export const TestComponent: FC = () => {
     <>
       <GridBox>
         <ColumnBox>
-          <Button variant="contained" color="primary" onClick={() => refetch()}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() =>
+              refetch({
+                name: 'graceful-js',
+              })
+            }
+          >
             Fetch Rate Limit
           </Button>
         </ColumnBox>
