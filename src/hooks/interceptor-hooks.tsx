@@ -24,7 +24,7 @@ import { SelectErrorComponentWithStatusCode } from '../error-components/decider'
 import { createErrorInfoKey } from './utils'
 import { AnyObject } from '../types'
 
-const { fetch: windowFetch } = window
+const windowFetch = typeof window !== 'undefined' ? window.fetch : null
 
 function setStateInInterceptor(newProps: GracefulContext) {
   return (prev: GracefulContext) => ({
@@ -144,6 +144,12 @@ export const fetchInterceptor = (
 ) => {
   return (window.fetch = async function (...args) {
     const [, options] = args
+    if (!windowFetch) {
+      return new Promise((_, reject) => {
+        reject(new Error('window.fetch is not defined'))
+      })
+    }
+
     const res = await windowFetch(...args)
     return applyFetchCollector({
       ...fetchCollector,

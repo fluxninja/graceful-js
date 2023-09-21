@@ -31,9 +31,12 @@ export const useGracefulTheme = () => {
   return gracefulTheme
 }
 
-export declare type UseGracefulRequestProps<T extends 'Axios' | 'Fetch'> = {
+export declare type UseGracefulRequestProps<
+  T extends 'Axios' | 'Fetch',
+  TVariable = any
+> = {
   typeOfRequest: T
-  requestFnc: () => Promise<AxiosOrFetch<T>>
+  requestFnc: (data?: TVariable) => Promise<AxiosOrFetch<T>>
   options?: {
     disabled?: boolean
   } & Partial<GracefulRequestOptions>
@@ -41,7 +44,8 @@ export declare type UseGracefulRequestProps<T extends 'Axios' | 'Fetch'> = {
 
 export declare type UseGracefulRequestReturn<
   T extends 'Axios' | 'Fetch',
-  TData = any
+  TData = any,
+  TVariable = any
 > = {
   isError: boolean
   isLoading: boolean
@@ -49,21 +53,23 @@ export declare type UseGracefulRequestReturn<
   data: TData | null
   error: AxiosOrFetchError<T, TData> | null
   errorComponent: JSX.Element | null
-  refetch: () => void
+  refetch: (d?: TVariable) => void
 }
 
 export declare type UseGracefulRequest = <
   T extends 'Axios' | 'Fetch',
-  TData = any
+  TData = any,
+  TVariable = any
 >(
-  request: UseGracefulRequestProps<T>
-) => UseGracefulRequestReturn<T, TData>
+  request: UseGracefulRequestProps<T, TVariable>
+) => UseGracefulRequestReturn<T, TData, TVariable>
 
 export const useGracefulRequest: UseGracefulRequest = <
   T extends 'Axios' | 'Fetch',
-  TData = any
+  TData = any,
+  TVariable = any
 >(
-  request: UseGracefulRequestProps<T>
+  request: UseGracefulRequestProps<T, TVariable>
 ) => {
   const {
     typeOfRequest,
@@ -86,55 +92,58 @@ export const useGracefulRequest: UseGracefulRequest = <
     errorComponent: null,
   })
 
-  const requestRef = useRef<() => Promise<AxiosOrFetch<T, TData>>>(() =>
-    requestFnc()
+  const requestRef = useRef<(d?: TVariable) => Promise<AxiosOrFetch<T, TData>>>(
+    (d) => requestFnc(d)
   )
 
   const gracefulRequestOptionsRef = useRef<Partial<GracefulRequestOptions>>(
     gracefulRequestOptions
   )
 
-  const callGracefulRequest = useCallback(async () => {
-    try {
-      await gracefulRequest<typeof typeOfRequest, TData>(
-        typeOfRequest,
-        requestRef.current,
-        (error, res, { isLoading, isRetry } = {}) => {
-          const errorStatus =
-            typeOfRequest === 'Axios'
-              ? error?.status ||
-                (
-                  error as unknown as {
-                    response: {
-                      status: number
+  const callGracefulRequest = useCallback(
+    async (d?: TVariable) => {
+      try {
+        await gracefulRequest<typeof typeOfRequest, TData>(
+          typeOfRequest,
+          () => requestRef.current(d),
+          (error, res, { isLoading, isRetry } = {}) => {
+            const errorStatus =
+              typeOfRequest === 'Axios'
+                ? error?.status ||
+                  (
+                    error as unknown as {
+                      response: {
+                        status: number
+                      }
                     }
-                  }
-                )?.response?.status
-              : error?.status
+                  )?.response?.status
+                : error?.status
 
-          setState({
-            isLoading: !!isLoading,
-            isRetry: !!isRetry,
-            isError: !!error,
-            data: res,
-            error,
-            errorComponent: errorStatus ? (
-              <GracefulErrorByStatus status={errorStatus} />
-            ) : (
-              <WaitingRoom isLoading={!!isLoading} />
-            ),
-          })
-        },
-        gracefulRequestOptionsRef.current
-      )
-    } catch (error) {
-      setState((prevState) => ({
-        ...prevState,
-        isError: true,
-        error: error as AxiosOrFetchError<typeof typeOfRequest, TData>,
-      }))
-    }
-  }, [typeOfRequest])
+            setState({
+              isLoading: !!isLoading,
+              isRetry: !!isRetry,
+              isError: !!error,
+              data: res,
+              error,
+              errorComponent: errorStatus ? (
+                <GracefulErrorByStatus status={errorStatus} />
+              ) : (
+                <WaitingRoom isLoading={!!isLoading} />
+              ),
+            })
+          },
+          gracefulRequestOptionsRef.current
+        )
+      } catch (error) {
+        setState((prevState) => ({
+          ...prevState,
+          isError: true,
+          error: error as AxiosOrFetchError<typeof typeOfRequest, TData>,
+        }))
+      }
+    },
+    [typeOfRequest]
+  )
 
   useEffect(() => {
     if (disabled) {
